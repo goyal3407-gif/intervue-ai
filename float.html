@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file: 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' file: 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' file: data: https://cdn.jsdelivr.net; img-src 'self' file: data: blob:; media-src 'self' file: blob: data:; connect-src https:; object-src 'none'; base-uri 'self'">
+<title>AI Chat</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #0F1117; }
+  [data-theme="light"] body, [data-theme="light"] html { background: #F4F6FA; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: #e8eaf0;
+    display: flex;
+  }
+  .wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: rgb(15, 17, 23);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+  }
+  .head {
+    -webkit-app-region: drag;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    background: rgba(255,255,255,0.06);
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .head .spacer { flex: 1; }
+  .head label { font-size: 11px; color: #aab; font-weight: 400; }
+  .head input[type="range"] { -webkit-app-region: no-drag; width: 74px; }
+  .head select {
+    -webkit-app-region: no-drag;
+    background: rgba(255,255,255,0.10);
+    color: #e8eaf0;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 7px;
+    font-size: 12px;
+    padding: 2px 4px;
+  }
+  .head button {
+    -webkit-app-region: no-drag;
+    background: rgba(255,255,255,0.10);
+    color: #e8eaf0;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 7px;
+    padding: 3px 9px;
+    cursor: pointer;
+    font-size: 12.5px;
+  }
+  .head button:hover { background: rgba(255,255,255,0.20); }
+  .settingsrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    background: rgba(255,255,255,0.04);
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+    font-size: 12px;
+    color: #aab;
+    flex-shrink: 0;
+  }
+  .settingsrow select {
+    background: rgba(255,255,255,0.10);
+    color: #e8eaf0;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 7px;
+    font-size: 12px;
+    padding: 2px 4px;
+  }
+  .settingsrow label { display: flex; align-items: center; gap: 5px; }
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    font-family: 'Noto Sans', 'Inter', 'Segoe UI', system-ui, sans-serif;
+    scrollbar-width: thin;
+  }
+  .msg {
+    max-width: 86%;
+    padding: 9px 12px;
+    border-radius: 13px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    animation: msgIn .18s ease;
+    position: relative;
+  }
+  @keyframes msgIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .msg.user { background: rgba(26,115,232,0.88); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .msg.ai { background: rgba(255,255,255,0.10); color: #eef; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .msg.sys { background: transparent; color: #9aa; align-self: center; font-size: 12px; text-align: center; }
+  .msg img { display: block; max-width: 100%; border-radius: 8px; margin-bottom: 7px; }
+  .spk {
+    display: inline-block;
+    margin-left: 8px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: #fff;
+    border-radius: 6px;
+    padding: 1px 7px;
+    font-size: 12px;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+  .attach-preview {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 12px;
+    background: rgba(20,51,31,0.85);
+    border-top: 1px solid #22c55e;
+    font-size: 12px;
+    color: #c6cad8;
+  }
+  .attach-preview img { height: 44px; border-radius: 5px; border: 1px solid #22c55e; }
+  .attach-preview button {
+    background: rgba(255,255,255,0.10);
+    color: #e8eaf0;
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 7px;
+    padding: 3px 9px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .inputrow {
+    display: flex;
+    gap: 7px;
+    padding: 10px;
+    border-top: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.04);
+    flex-shrink: 0;
+  }
+  .inputrow input[type="text"] {
+    flex: 1;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 9px;
+    color: #e8eaf0;
+    padding: 9px 11px;
+    font-size: 13.5px;
+    min-width: 0;
+  }
+  .inputrow button {
+    background: rgba(255,255,255,0.10);
+    color: #e8eaf0;
+    border: 1px solid rgba(255,255,255,0.16);
+    padding: 8px 11px;
+    border-radius: 9px;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .inputrow button:hover { background: rgba(255,255,255,0.20); }
+  .inputrow .send { background: #1a73e8; border-color: #1a73e8; color: #fff; }
+  .inputrow input[type="text"], .inputrow textarea {
+    flex: 1;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 9px;
+    color: #e8eaf0;
+    padding: 9px 11px;
+    font-size: 13.5px;
+    min-width: 0;
+    font-family: inherit;
+    resize: none;
+    max-height: 110px;
+    overflow-y: auto;
+  }
+  .inputrow .rec { background: #b91c1c !important; border-color: #b91c1c !important; color: #fff; }
+  .msg .txt { white-space: pre-wrap; }
+  .msg .txt.rendered { white-space: normal; }
+  .msg .meta { font-size: 10.5px; color: #9aa; opacity: 0; transition: opacity .15s ease; margin-top: 3px; text-align: right; }
+  .msg:hover .meta { opacity: .75; }
+  .msg .status { font-size: 11.5px; color: #fbbf24; margin-top: 5px; }
+  .msg .actions { display: none; gap: 5px; margin-top: 7px; }
+  .msg.done .actions { display: flex; }
+  .msg .actions button, .msg .retrybtn {
+    background: rgba(255,255,255,0.12); color: #e8eaf0; border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 6px; padding: 3px 9px; font-size: 11.5px; cursor: pointer; transition: background .15s ease;
+  }
+  .msg .actions button:hover, .msg .retrybtn:hover { background: rgba(255,255,255,0.22); }
+  .msg.error { background: rgba(90, 25, 32, 0.85); border: 1px solid #b3402f; color: #fecaca; }
+  .tdots { display: inline-flex; gap: 5px; padding: 4px 2px; }
+  .tdots i { width: 7px; height: 7px; border-radius: 50%; background: #9aa3b8; animation: tblink 1.2s infinite; }
+  .tdots i:nth-child(2) { animation-delay: .18s; }
+  .tdots i:nth-child(3) { animation-delay: .36s; }
+  @keyframes tblink { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
+  .msg .txt h2, .msg .txt h3, .msg .txt h4 { margin: 7px 0 3px; line-height: 1.3; }
+  .msg .txt ul, .msg .txt ol { margin: 5px 0 5px 17px; padding: 0; }
+  .msg .txt code.inline { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.16); border-radius: 5px; padding: 1px 5px; font-size: 12.5px; }
+  .codeblock { background: rgba(5,7,11,0.9); border: 1px solid rgba(255,255,255,0.16); border-radius: 9px; margin: 7px 0; overflow: hidden; }
+  .codehead { display: flex; justify-content: space-between; align-items: center; padding: 4px 9px; background: rgba(255,255,255,0.07); font-size: 11px; color: #9aa; }
+  .codehead button { background: rgba(255,255,255,0.12); color: #e8eaf0; border: none; border-radius: 6px; padding: 3px 9px; font-size: 11px; cursor: pointer; }
+  .codeblock pre { margin: 0; padding: 9px 11px; overflow-x: auto; font-size: 12.5px; line-height: 1.45; }
+  .tok-kw { color: #c792ea; } .tok-str { color: #9ccc65; } .tok-num { color: #f78c6c; } .tok-com { color: #5f6b85; font-style: italic; }
+  .tablewrap { overflow-x: auto; margin: 7px 0; }
+  .tablewrap table { border-collapse: collapse; font-size: 12.5px; }
+  .tablewrap th, .tablewrap td { border: 1px solid rgba(255,255,255,0.18); padding: 4px 8px; text-align: left; }
+  .badge { background: rgba(20,51,31,0.9); color: #4ade80; border: 1px solid #22c55e; border-radius: 999px; padding: 1px 8px; font-size: 11px; font-weight: 600; -webkit-app-region: no-drag; }
+  .offlinebar { background: #7c2d12; color: #ffedd5; text-align: center; font-size: 12px; padding: 6px 8px; flex-shrink: 0; }
+  .scrolldown { position: absolute; right: 14px; bottom: 74px; z-index: 5; background: #1a73e8; color: #fff; border: none; border-radius: 999px; padding: 6px 12px; font-size: 12px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+  .stopbtn { background: #b3402f !important; border-color: #b3402f !important; }
+  body.collapsed .messages, body.collapsed .settingsrow, body.collapsed .attach-preview, body.collapsed .offlinebar { display: none !important; }
+  ::-webkit-scrollbar { width: 7px; height: 7px; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 7px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #1a73e8; outline-offset: 1px; }
+  [data-theme="light"] .wrap { background: rgb(244,246,250); border-color: rgba(0,0,0,0.14); }
+  [data-theme="glass"] .wrap { background: linear-gradient(150deg, rgb(22,34,78) 0%, rgb(11,16,38) 70%); border-color: rgba(255,255,255,0.24); }
+  [data-theme="glass"] body { background: #0B1026; color: #F2F5FF; }
+  [data-theme="glass"] .head, [data-theme="glass"] .settingsrow, [data-theme="glass"] .inputrow { background: rgba(255,255,255,0.06); color: #F2F5FF; }
+  [data-theme="glass"] .msg.user { background: rgba(47,124,246,0.32); color: #ffffff; }
+  [data-theme="glass"] .chip { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.20); color: #F2F5FF; }
+  [data-theme="glass"] textarea, [data-theme="glass"] input, [data-theme="glass"] select { background: rgba(255,255,255,0.08); color: #F2F5FF; border-color: rgba(255,255,255,0.20); }
+  [data-theme="glass"] select option { color: #14161c; }
+
+  [data-theme="light"] body { color: #14161c; }
+  [data-theme="light"] .msg.ai { background: rgba(255,255,255,0.95); color: #14161c; border: 1px solid rgba(0,0,0,0.10); }
+  [data-theme="light"] .msg.sys { color: #5b6172; }
+  [data-theme="light"] .head, [data-theme="light"] .settingsrow, [data-theme="light"] .inputrow { background: rgba(255,255,255,0.55); color: #14161c; }
+  [data-theme="light"] .head select, [data-theme="light"] .settingsrow select, [data-theme="light"] .inputrow textarea { background: rgba(255,255,255,0.9); color: #14161c; border-color: rgba(0,0,0,0.16); }
+  [data-theme="light"] .head button, [data-theme="light"] .inputrow button { background: rgba(255,255,255,0.85); color: #14161c; border-color: rgba(0,0,0,0.16); }
+  [data-theme="light"] .inputrow .send { background: #1a73e8; color: #fff; }
+  .settingsPanel { flex-direction: column; align-items: stretch; gap: 7px; padding: 9px 10px; }
+  .setGroup { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .setGroup .glabel { font-weight: 700; font-size: 11px; letter-spacing: 0.4px; opacity: 0.75; min-width: 58px; text-transform: uppercase; }
+  .ver { font-size: 10px; opacity: 0.55; font-weight: 400; }
+  [data-theme="light"] .settingsPanel { background: rgba(255,255,255,0.55); color: #14161c; }
+  /* ===== UX Polish (v3.4.0): saare button ek jaise, sahi spacing, saaf experience ===== */
+  button { border-radius: 10px; font-family: inherit; cursor: pointer; transition: filter 0.15s ease, transform 0.05s ease, opacity 0.15s ease; }
+  button:hover { filter: brightness(1.12); }
+  button:active { transform: scale(0.97); }
+  button:focus-visible { outline: 2px solid #1a73e8; outline-offset: 1px; }
+  button:disabled { opacity: 0.5; cursor: default; transform: none; }
+  .head button, .inputrow button { min-width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; padding: 0 7px; }
+  .inputrow .send { width: auto; padding: 0 16px; font-weight: 700; font-size: 14px; }
+  .sizeBtn { min-width: 30px; height: 28px; font-weight: 700; padding: 0 8px; }
+  .settingsPanel select { border-radius: 8px; padding: 4px 6px; }
+  .setGroup { row-gap: 7px; }
+  /* Presentation v3.6 — saaf padhai: word-wrap, spacing, bade akshar option */
+  .msg { line-height: 1.65; overflow-wrap: anywhere; }
+  .msg p { margin: 0 0 9px; }
+  .msg ul, .msg ol { margin: 4px 0 10px; padding-left: 22px; }
+  .msg li { margin: 3px 0; }
+  .msg h1, .msg h2, .msg h3, .msg h4 { margin: 12px 0 6px; line-height: 1.35; }
+  .codeblock pre { line-height: 1.55; }
+  body.bigtext .msg { font-size: 16.5px; line-height: 1.8; }
+  /* ===== v3.7 Redesign — main window wale hi tokens/style (visual match) ===== */
+  :root { --bg:#101216; --surface:#17191F; --line:#26292F; --text:#E8EAED; --muted:#9AA0A6; --accent:#2F7CF6; }
+  [data-theme="light"] { --bg:#F7F8FA; --surface:#FFFFFF; --line:#E2E5EA; --text:#17191D; --muted:#5F6368; }
+  body { background: var(--bg); color: var(--text); }
+  .msg.user { background: rgba(47,124,246,.16); color: var(--text); border: 1px solid rgba(47,124,246,.28); }
+  .msg.ai { background: transparent; border: none; box-shadow: none; align-self: stretch; max-width: 100%; border-radius: 0; padding-left: 2px; padding-right: 2px; }
+  [data-theme="light"] .msg.ai { background: transparent; border: none; color: var(--text); }
+  [data-theme="light"] .msg.user { background: rgba(47,124,246,.12); color: var(--text); }
+  .msg.error { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid #E0A13E; color: var(--text); }
+  .msg .actions { opacity: .55; transition: opacity .15s ease; }
+  .msg:hover .actions, .msg:focus-within .actions { opacity: 1; }
+  .badge::before { content: '● '; color: #34C759; font-size: 10px; }
+  .send, #sendBtn { background: var(--accent); }
+
+  .msg h2 { font-size: 17px; } .msg h3 { font-size: 15.5px; } .msg h4 { font-size: 14.5px; } .msg strong { font-weight: 700; }
+
+/* ===== Design A (UX Redesign) ===== */
+.msg.user { align-self: flex-start; background: transparent; border: none; border-left: 2px solid var(--accent); border-radius: 0; padding: 2px 4px 2px 10px; max-width: 94%; }
+.msg.ai:not(.done):not(.error) .txt:empty::after { content: '\25CF'; color: var(--muted); animation: apulse 1.1s ease-in-out infinite; }
+.msg.ai:not(.done):not(.error) .txt:not(:empty)::after { content: '\258D'; color: var(--accent); animation: apulse .8s steps(1) infinite; margin-left: 1px; }
+@keyframes apulse { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+.ansbadge { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 11px; color: var(--muted); background: var(--surface); }
+.ansbadge .dot { width: 8px; height: 8px; border-radius: 50%; background: #34C759; }
+.ansbadge .dot.amber { background: #E0A13E; }
+.actions .moreActs { display: none; gap: 6px; flex-wrap: wrap; }
+.actions .moreActs.open { display: inline-flex; }
+.linkglyph { color: var(--muted); font-size: 8px; letter-spacing: 2px; margin-left: 4px; }
+.linkglyph.pulse { color: #34C759; transition: color .2s; }
+.cachelbl { margin-top: 8px; font-size: 11.5px; color: var(--muted); }
+.cachelbl button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 11.5px; text-decoration: underline; padding: 0; }
+details.tech { margin-top: 8px; font-size: 11.5px; color: var(--muted); }
+details.tech summary { cursor: pointer; }
+.repairic { cursor: help; font-size: 11px; opacity: .8; }
+.codewrap pre { white-space: pre-wrap; word-break: break-word; }
+
+/* ===== Perfect Mix 4.1.0 ===== */
+body.fs-s .msg { font-size: 13px; }
+body.fs-l .msg { font-size: 16.5px; }
+body.fs-l .msg .txt { line-height: 1.75; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+#healthDot { width: 9px; height: 9px; border-radius: 50%; background: #9AA0A6; display: inline-block; margin-left: 2px; }
+#healthDot.green { background: #34C759; } #healthDot.amber { background: #E0A13E; } #healthDot.red { background: #D64545; }
+#activityLine { display: none; margin: 0 12px 6px; font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; }
+#chatSearch { width: 100%; box-sizing: border-box; margin: 6px 0; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+#codeOverlay { position: fixed; inset: 0; background: rgba(0,0,0,.62); display: none; align-items: center; justify-content: center; z-index: 9999; }
+#codeOverlay .box { background: var(--surface); color: var(--text); width: min(92vw, 900px); max-height: 88vh; overflow: auto; padding: 14px; border-radius: 12px; border: 1px solid var(--line); }
+#codeOverlay pre { white-space: pre; overflow: auto; font-size: 13.5px; line-height: 1.6; }
+.chatgroup { font-size: 11.5px; font-weight: 700; opacity: .65; padding: 8px 2px 2px; letter-spacing: .4px; }
+
+/* ===== v4.1.2 Float Interactive ===== */
+@keyframes msgIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+.msg { animation: msgIn .28s ease both; }
+@keyframes fadeInF { from { opacity: 0; } to { opacity: 1; } }
+body { animation: fadeInF .25s ease both; }
+.head button { transition: transform .12s ease, box-shadow .15s ease; }
+.head button:hover { transform: scale(1.14); box-shadow: 0 0 0 1px var(--accent), 0 2px 10px rgba(0,0,0,.35); }
+#waveBars { display: none; align-items: flex-end; gap: 2px; height: 14px; margin-left: 2px; }
+body.listening #waveBars { display: inline-flex; }
+#waveBars i { width: 3px; background: #D64545; border-radius: 2px; height: 6px; animation: waveB .9s ease-in-out infinite; }
+#waveBars i:nth-child(2) { animation-delay: .15s; } #waveBars i:nth-child(3) { animation-delay: .3s; } #waveBars i:nth-child(4) { animation-delay: .45s; } #waveBars i:nth-child(5) { animation-delay: .6s; }
+@keyframes waveB { 0%, 100% { height: 5px; } 50% { height: 14px; } }
+@keyframes pulseRed { 0%, 100% { box-shadow: 0 0 0 0 rgba(214,69,69,0); } 50% { box-shadow: 0 0 0 5px rgba(214,69,69,.35); } }
+body.listening #liveBtnHead { animation: pulseRed 1.1s ease-in-out infinite; }
+#chipsRow { display: flex; gap: 6px; overflow-x: auto; padding: 7px 8px 5px; scrollbar-width: thin; -webkit-app-region: no-drag; }
+#chipsRow::-webkit-scrollbar { height: 5px; }
+#chipsRow::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+.chip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 999px; padding: 4px 11px; font-size: 12px; cursor: pointer; transition: all .13s ease; }
+.chip:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+.chip:active { transform: scale(.95); }
+#providerBadge { cursor: pointer; white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.head > span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.head button { flex: 0 0 auto; }
+
+/* ===== Veltrix 5.0 float ===== */
+#statusStrip { display: flex; gap: 6px; align-items: center; font-size: 11px; color: var(--muted); padding: 3px 10px; border-bottom: 1px solid var(--line); background: var(--surface); }
+#statusStrip b { color: var(--text); font-weight: 600; }
+#stLive.on { color: #D64545; font-weight: 700; }
+
+#interviewBtnF.on { background: var(--accent); color: #fff; }
+</style>
+
+<style>
+/* ===== Intervue 1.2: float redesign ===== */
+.head { padding: 8px 10px; gap: 6px; }
+.head > span:first-child { font-size: 13.5px; font-weight: 700; letter-spacing: .2px; }
+body.listening #liveBtnHead { background: #D64545 !important; color: #fff !important; animation: ivPulse 1.1s ease-in-out infinite; }
+@keyframes ivPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(214,69,69,.45); } 50% { box-shadow: 0 0 0 6px rgba(214,69,69,0); } }
+#statusStrip { font-size: 11px; padding: 4px 10px; opacity: .88; }
+#chipsRow { padding: 8px 10px 6px; }
+.chip { padding: 5px 12px; font-size: 12.5px; }
+.messages { padding: 12px 12px 6px; }
+.msg { line-height: 1.55; }
+.inputrow { padding: 10px; gap: 8px; align-items: flex-end; }
+.inputrow button { width: 38px; height: 38px; border-radius: 11px; flex: 0 0 auto; }
+.inputrow textarea { border-radius: 12px !important; padding: 10px 12px !important; font-size: 13.5px; }
+#sendBtn { width: auto !important; padding: 0 16px !important; background: var(--accent) !important; color: #fff !important; font-weight: 700; border: none !important; }
+#resizeGrip { position: fixed; right: 3px; bottom: 3px; width: 20px; height: 20px; display: flex; align-items: flex-end; justify-content: flex-end; color: var(--muted); font-size: 13px; cursor: nwse-resize; -webkit-app-region: no-drag; user-select: none; z-index: 60; opacity: .65; line-height: 1; }
+#resizeGrip:hover { opacity: 1; color: var(--accent); }
+body.collapsed #resizeGrip { display: none; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <span>&#127919; Interview <span class="ver">v1.3.1</span></span>
+      <span class="badge" id="providerBadge" title="Provider badlo (click)">Groq</span><span id="waveBars" title="Live Class chal raha hai"><i></i><i></i><i></i><i></i><i></i></span>
+      <div class="spacer"></div>
+      <button id="liveBtnHead" title="Live Class Mode — student ka sawal suno, live jawab pao" aria-label="Live Class Mode">&#127911;</button>
+      <button id="sizeBtnF" title="Size badlo &#8212; S / M / L" aria-label="Size badlo">&#10530;</button>
+      <button id="settingsBtn" title="Settings kholo / band karo" aria-label="Settings">&#9881;</button>
+      <button id="pinBtn" title="Always on top: ON (band karne ke liye dabao)" aria-label="Always on top toggle">&#128204;</button>
+      <button id="closeBtn" title="Band karo (Ctrl+Shift+T)" aria-label="Band karo">&#10005;</button>
+    </div>
+    <div id="statusStrip"><span>Provider: <b id="stProvider">—</b></span><span>·</span><span>Ghost: <b id="stSpeed">—</b></span><span>·</span><span id="stLive">Live: Off</span><span>·</span><span id="stTimer">⏱ 00:00</span></div>
+    <div class="settingsrow settingsPanel" id="settingsPanel" style="display:none;">
+      <div class="setGroup">
+        <span class="glabel">AI</span>
+        <span>Jawab pehle:</span>
+        <select id="providerSel">
+          <option value="groq">Groq (sabse tez)</option>
+          <option value="gemini">Gemini</option>
+          <option value="auto">Auto</option>
+          <option value="race">⚡ Race</option>
+        </select>
+        <select id="langSel" title="Jawab ki bhasha">
+          <option value="en">English</option>
+          <option value="hinglish">Hinglish</option>
+        </select>
+        <select id="themeSel" title="Theme">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="glass">Glass</option>
+        </select>
+      </div>
+      <div class="setGroup">
+        <span class="glabel">Text Size</span>
+        <button id="bigTextBtn2" type="button" title="Bade akshar ON/OFF — class me saaf padhne ke liye">A+ Bade akshar</button>
+      </div>
+      <div class="setGroup">
+        <span class="glabel">📌 Pins</span>
+        <div id="pinsList" style="max-height:150px; overflow-y:auto; min-width:220px;"></div>
+      </div>
+      <div class="setGroup">
+        <span class="glabel">Speed</span>
+        <label><input type="checkbox" id="fastMode"> Chhote jawab (tick par hi)</label>
+        <label><input type="checkbox" id="turboMode"> 🚀 Ultra Speed</label>
+        <label><input type="checkbox" id="muteMode" checked> &#128263; Mute</label>
+        <label><input type="checkbox" id="debugLogMode"> &#128027; Debug</label>
+      </div>
+      <div class="setGroup">
+        <span class="glabel">Window</span>
+        <span>Size:</span>
+        <button class="sizeBtn" data-w="340" data-h="460" title="Chhota size">S</button>
+        <button class="sizeBtn" data-w="400" data-h="560" title="Medium size">M</button>
+        <button class="sizeBtn" data-w="520" data-h="700" title="Bada size">L</button>
+        <span style="font-size:11px; opacity:.7;">(kinare se kheench kar bhi)</span>
+        <span>Ghost:</span>
+        <select id="ivLenSel" title="Jawab ki lambai - bolne ke time ke hisaab se"><option value="normal">Jawab: Normal</option><option value="s30">Jawab: 30 sec</option><option value="long">Jawab: Detail (2 min)</option></select>
+        <select id="ghostSpeed" title="Ghost typing speed">
+          <option value="slow">Slow</option>
+          <option value="normal" selected>Normal</option>
+          <option value="fast">Fast</option>
+          <option value="real">Real Human</option>
+        </select>
+      </div>
+      <div class="setGroup">
+        <span class="glabel">Chat</span>
+        <button id="clearBtn" title="Poori chat saaf karo — nayi shuruaat" aria-label="Chat saaf karo">&#129529; Chat saaf karo</button>
+      </div>
+    </div>
+    <div class="offlinebar" id="offlineBar" style="display:none;">&#128244; Internet band hai — jawab ke liye net chahiye</div>
+    <div class="messages" id="messages">
+      <div class="msg sys">Main yahin hoon — doubt likho, screenshot bhejo, ya bol kar puchho. Ye box har app ke upar rahega aur screenshot/share me kabhi nahi ayega.</div>
+    </div>
+    <button class="scrolldown" id="scrollDownBtn" style="display:none;" aria-label="Neeche jao">&#11015; Neeche jao</button>
+    <div id="chipsRow">
+      <button class="chip" type="button" data-q="Isi jawab ko aur short aur bolne-layak bana do - sirf 2-3 points.">&#128483; Short bolo</button>
+      <button class="chip" type="button" data-q="Isi jawab ko aur confident aur professional andaaz me bolo, first person me.">&#128170; Confident</button>
+      <button class="chip" type="button" data-q="Isi jawab ke saath ek chhota sa asal example bhi jod do jo main bol sakun.">&#9999;&#65039; Example jodo</button>
+      <button class="chip" type="button" data-q="Isi jawab ko aur simple, easy English me bolo - chhote chhote sentences me, taaki main aasani se bol sakun.">&#127468;&#127463; Simple English</button>
+      <button class="chip" type="button" data-q="Isi jawab ko thoda aur detail me bolo, par bolne-layak points me hi rakho.">&#128218; Detail</button>
+      <button class="chip" type="button" data-q="Mere resume ke hisaab se Tell me about yourself ka jawab 4-5 bolne-layak points me do.">&#129485; Self Intro</button>
+      <button class="chip" type="button" data-q="Is topic par interviewer ka agla sawal kya ho sakta hai, guess karo aur uska ek-line ka taiyaari hint do.">&#128302; Agla sawal</button>
+      <button class="chip" type="button" data-q="Is code ko bolne-layak points me samjhao - approach, phir time aur space complexity.">&#128187; Code samjhao</button>
+    </div>
+    <div class="attach-preview" id="attachPreview" style="display:none;">
+      <img id="attachImg" alt="screenshot">
+      <span>Screenshot ready hai</span>
+      <button id="removeAttach">Hatado</button>
+    </div>
+    <div class="inputrow">
+      <button id="shotBtn" title="Poori screen ka screenshot lo">&#128247;</button>
+      <button id="listenBtn" title="Live Class Mode — student ka sawal live translate + live jawab">&#127911;</button>
+      <button id="micBtn" title="Bol kar doubt puchho">&#127908;</button>
+      <textarea id="chatText" rows="1" placeholder="Apna sawal likho..." aria-label="Apna sawal likho"></textarea>
+      <button class="send" id="sendBtn" aria-label="Bhejo">Bhejo</button>
+    </div>
+  </div>
+
+<script src="ai-engine.js"></script>
+<script>
+  const messagesEl = document.getElementById('messages');
+  const chatText = document.getElementById('chatText');
+  const sendBtn = document.getElementById('sendBtn');
+  let convo = [];
+  let pendingImage = null;
+
+  // ---------- Settings (main window ke saath shared) ----------
+  // Mute default ON hai: AI bilkul silent rahega, class me awaz kabhi nahi jayegi.
+  let settings = { provider: 'race', fast: false, muted: true, lang: 'en', turbo: false, debugLog: false, theme: 'dark', fontSize: 'm', approved: null, cacheEnabled: false, cacheHours: 24, dailyLimit: 0, warnAt: 0, retentionDays: 30, interviewMode: true, interviewJd: '', fmtMode: 'auto', fmtManual: 'normal', floatTop: true, floatSize: null };
+  let myProfile = '';
+  let myCustomBoxes = '';
+  let storeProviders = {};
+  let storeCustoms = [];
+  let groqKeyStr = '';
+  // v3.0: shared engine (ai-engine.js) ke liye is page ke adapters.
+  // Float ka usage/cache store-backed strings me rehta hai (localStorage nahi).
+  let floatUsageStr = '{}';
+  let floatCacheStr = '{}';
+  aiConfigure({
+    profileText: () => myProfile || '',
+    customText: () => myCustomBoxes || '',
+    getCustoms: () => storeCustoms,
+    getProviders: () => storeProviders,
+    getGroqKeyStr: () => groqKeyStr || liveGroqKey || '',
+    storageRead: (k) => (k === 'usage' ? floatUsageStr : (k === 'cache' ? floatCacheStr : null)),
+    storageWrite: (k, v) => {
+      if (k === 'usage') { floatUsageStr = v; try { window.api.syncKeys({ usage: v }); } catch (e) { /* ignore */ } }
+      else if (k === 'cache') { floatCacheStr = v; try { window.api.syncKeys({ cache: v }); } catch (e) { /* ignore */ } }
+    },
+    pushShared: (st) => { try { window.api.syncKeys(st); } catch (e) { /* ignore */ } },
+    pullShared: async () => { try { return await window.api.getKeys(); } catch (e) { return null; } }
+  });
+  const providerSel = document.getElementById('providerSel');
+  const fastModeEl = document.getElementById('fastMode');
+  const muteEl = document.getElementById('muteMode');
+  const langSel = document.getElementById('langSel');
+  const turboEl = document.getElementById('turboMode');
+  const debugEl = document.getElementById('debugLogMode');
+  const themeSel = document.getElementById('themeSel');
+  function applyTheme() { const t = settings.theme === 'system' ? ((window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark') : settings.theme; document.documentElement.dataset.theme = (t === 'light' || t === 'glass') ? t : 'dark'; }
+  function updateBadge() {
+    const badge = document.getElementById('providerBadge');
+    if (!badge || !providerSel) return;
+    const sel = providerSel.options[providerSel.selectedIndex];
+    const SHORTP = { groq: 'Groq', cerebras: 'Cerebras', gemini: 'Gemini', openrouter: 'OpenRouter', github: 'GitHub', mistral: 'Mistral', sambanova: 'SambaNova', auto: 'Auto', race: '\u26a1 Race' };
+    const bv = sel ? sel.value : settings.provider;
+    badge.textContent = SHORTP[bv] || (bv && bv.indexOf('custom:') === 0 ? bv.slice(7) : (bv || 'AI'));
+  }
+  function applyMuteUI() {
+    document.querySelectorAll('.spk-voice').forEach((b) => { b.style.display = settings.muted !== false ? 'none' : ''; });
+  }
+  function refreshProviderOptions() {
+    if (!providerSel) return;
+    const cur = settings.provider;
+    providerSel.innerHTML = '';
+    const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; providerSel.appendChild(o); };
+    add('groq', 'Groq (sabse tez)');
+    add('cerebras', 'Cerebras (ultra fast)');
+    add('gemini', 'Gemini');
+    add('openrouter', 'OpenRouter (free models)');
+    add('github', 'GitHub Models');
+    add('mistral', 'Mistral');
+    add('sambanova', 'SambaNova');
+    storeCustoms.forEach((c) => add('custom:' + c.name, '➕ ' + c.name));
+    add('auto', 'Auto');
+    add('race', '⚡ Race');
+    providerSel.value = cur;
+    if (providerSel.value !== cur) providerSel.value = 'groq';
+    updateBadge();
+  }
+  // ---------- Format Mode: Auto (sawal ke hisaab se) / Manual (fix format) ----------
+  function refreshFmtUI() {
+    document.body.classList.toggle('bigtext', !!settings.floatBig);
+    refreshPinUI();
+  }
+  // ---------- Always on top (pin): floating window screen ke sabse upar ----------
+  const pinBtn = document.getElementById('pinBtn');
+  function refreshPinUI() {
+    if (!pinBtn) return;
+    const on = settings.floatTop !== false;
+    pinBtn.style.opacity = on ? '1' : '0.35';
+    pinBtn.title = on ? 'Always on top: ON (band karne ke liye dabao)' : 'Always on top: OFF (chalu karne ke liye dabao)';
+  }
+  if (pinBtn) pinBtn.addEventListener('click', () => { settings.floatTop = !(settings.floatTop !== false); refreshPinUI(); saveFmtSettings(); if (window.api && window.api.setFloatTop) window.api.setFloatTop(settings.floatTop !== false); });
+  // ---------- Settings panel (⚙): grouped settings kholo / band karo ----------
+  const settingsPanel = document.getElementById('settingsPanel');
+  const settingsBtn = document.getElementById('settingsBtn');
+  if (settingsBtn && settingsPanel) settingsBtn.addEventListener('click', () => { settingsPanel.style.display = (settingsPanel.style.display === 'none' || !settingsPanel.style.display) ? 'flex' : 'none'; });
+  const liveBtnHead = document.getElementById('liveBtnHead');
+  if (liveBtnHead) liveBtnHead.addEventListener('click', () => { const b = document.getElementById('listenBtn'); if (b) b.click(); });
+  function toggleBigText() { settings.floatBig = !settings.floatBig; document.body.classList.toggle('bigtext', !!settings.floatBig); saveFmtSettings(); }
+  const bigTextBtn2 = document.getElementById('bigTextBtn2');
+  if (bigTextBtn2) bigTextBtn2.addEventListener('click', toggleBigText);
+
+  // ---------- Pin kiye hue jawab (main window ke saath shared) ----------
+  let pinsList = [];
+  function savePins() { try { if (window.api && window.api.syncKeys) window.api.syncKeys({ pins: JSON.stringify(pinsList) }); } catch (e) { /* ignore */ } }
+  function renderPins() {
+    const el = document.getElementById('pinsList');
+    if (!el) return;
+    el.innerHTML = '';
+    if (!pinsList.length) { el.innerHTML = '<div style="opacity:.7; font-size:12px;">Koi pin nahi hai — jawab ke neeche 📌 Pin dabao.</div>'; return; }
+    pinsList.forEach((pin, ix) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex; gap:5px; align-items:flex-start; padding:4px 0; border-bottom:1px dashed rgba(127,127,127,.25);';
+      const tx = document.createElement('div');
+      tx.style.cssText = 'flex:1; font-size:12px; white-space:pre-wrap;';
+      tx.textContent = pin.a.slice(0, 140) + (pin.a.length > 140 ? '...' : '');
+      const cp = document.createElement('button');
+      cp.type = 'button';
+      cp.textContent = '📋';
+      cp.title = 'Copy karo';
+      cp.addEventListener('click', () => { try { navigator.clipboard.writeText(pin.a); } catch (e) { /* ignore */ } });
+      const del = document.createElement('button');
+      del.type = 'button';
+      del.textContent = '🗑';
+      del.title = 'Pin hatao';
+      del.addEventListener('click', () => { pinsList.splice(ix, 1); savePins(); renderPins(); });
+      row.appendChild(tx);
+      row.appendChild(cp);
+      row.appendChild(del);
+      el.appendChild(row);
+    });
+  }
+  renderPins();
+  // ---------- Floating window size: S / M / L button (choice save rehti hai) ----------
+  document.querySelectorAll('.sizeBtn').forEach((b) => b.addEventListener('click', () => {
+    const w = Number(b.getAttribute('data-w')) || 400;
+    const h = Number(b.getAttribute('data-h')) || 560;
+    settings.floatSize = { w: w, h: h };
+    saveFmtSettings();
+    if (window.api && window.api.setFloatSize) window.api.setFloatSize(w, h);
+  }));
+  function saveFmtSettings() { try { if (window.api && window.api.syncKeys) window.api.syncKeys({ settings: settings }); } catch (e) { /* ignore */ } }
+
+  async function loadSettings() {
+    try {
+      const store = await window.api.getKeys();
+      if (store && store.settings) settings = Object.assign(settings, store.settings);
+      refreshFmtUI();
+      if (store && typeof store.profile === 'string') myProfile = store.profile;
+      if (store && typeof store.customBoxes === 'string') myCustomBoxes = store.customBoxes;
+      if (store && typeof store.providers === 'string') { try { storeProviders = JSON.parse(store.providers) || {}; } catch (e) { /* ignore */ } }
+      if (store && typeof store.pins === 'string' && store.pins) { try { pinsList = JSON.parse(store.pins) || []; } catch (e) { /* ignore */ } renderPins(); }
+      if (store && typeof store.customs === 'string') { try { storeCustoms = JSON.parse(store.customs) || []; } catch (e) { /* ignore */ } }
+      if (storeProviders.groq) groqKeyStr = storeProviders.groq;
+      if (store && typeof store.usage === 'string') floatUsageStr = store.usage;
+      if (store && typeof store.cache === 'string') floatCacheStr = store.cache;
+      if (store && store.cooldowns) { try { mergeCooldownData(JSON.parse(store.cooldowns)); } catch (e) { /* ignore */ } }
+    } catch (e) { /* ignore */ }
+    refreshProviderOptions();
+    if (providerSel) providerSel.value = settings.provider;
+    if (fastModeEl) fastModeEl.checked = !!settings.fast;
+    if (muteEl) muteEl.checked = settings.muted !== false;
+    if (langSel) langSel.value = settings.lang || 'en';
+    if (turboEl) turboEl.checked = !!settings.turbo;
+    if (debugEl) debugEl.checked = !!settings.debugLog;
+    if (themeSel) themeSel.value = settings.theme || 'dark';
+    applyTheme();
+    applyMuteUI();
+  }
+  function saveSettings() {
+    if (providerSel) settings.provider = providerSel.value;
+    if (fastModeEl) settings.fast = fastModeEl.checked;
+    if (muteEl) settings.muted = muteEl.checked;
+    if (langSel) settings.lang = langSel.value;
+    if (turboEl) settings.turbo = turboEl.checked;
+    if (debugEl) settings.debugLog = debugEl.checked;
+    if (themeSel) settings.theme = themeSel.value;
+    applyTheme();
+    updateBadge();
+    if (settings.muted !== false) { try { speechSynthesis.cancel(); } catch (e) { /* ignore */ } }
+    applyMuteUI();
+    window.api.syncKeys({ settings: settings });
+  }
+  if (providerSel) providerSel.addEventListener('change', saveSettings);
+  if (fastModeEl) fastModeEl.addEventListener('change', saveSettings);
+  if (muteEl) muteEl.addEventListener('change', saveSettings);
+  if (langSel) langSel.addEventListener('change', saveSettings);
+  if (turboEl) turboEl.addEventListener('change', saveSettings);
+  if (debugEl) debugEl.addEventListener('change', saveSettings);
+  if (themeSel) themeSel.addEventListener('change', saveSettings);
+  // Window chhupte hi koi bhi chalti awaz turant band.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { try { speechSynthesis.cancel(); } catch (e) { /* ignore */ } }
+  });
+  loadSettings();
+
+  document.getElementById('closeBtn').addEventListener('click', () => window.api.hideFloat());
+
+  function speakText(text) {
+    if (settings.muted !== false) return; // Mute ON = AI bilkul silent, awaz kabhi nahi
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const voices = speechSynthesis.getVoices();
+      const v = voices.find((x) => /hi[-_]/i.test(x.lang)) || voices.find((x) => /en[-_]IN/i.test(x.lang));
+      if (v) u.voice = v;
+      u.rate = 1.0;
+      speechSynthesis.speak(u);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---------- Ghost typing ----------
+  const ghostSpeedSel = document.getElementById('ghostSpeed');
+  if (ghostSpeedSel) {
+    ghostSpeedSel.value = localStorage.getItem('ghost_speed') || 'normal';
+    ghostSpeedSel.addEventListener('change', () => localStorage.setItem('ghost_speed', ghostSpeedSel.value));
+  }
+  function ghostProfile() {
+    const v = ghostSpeedSel ? ghostSpeedSel.value : (localStorage.getItem('ghost_speed') || 'normal');
+    if (v === 'slow') return { delay: 70, mode: 'slow' };
+    if (v === 'fast') return { delay: 14, mode: 'fast' };
+    if (v === 'real') return { delay: 90, mode: 'real' };
+    const cd = Number(localStorage.getItem('ghost_custom_delay') || 0); if (cd >= 10 && cd <= 90) return { delay: cd, mode: 'normal' };
+    return { delay: 34, mode: 'normal' };
+  }
+  function startGhostType(text, opts) {
+    if (!text || text === 'Soch raha hoon...') return;
+    addMsg('sys', 'Ghost typing: 3 second me typing shuru hogi - jahan type karwana hai, wahan abhi click kar do. Pause/resume: mouse ka middle click (scroll wala). Poora rokne ke liye Ctrl+Shift+X.');
+    const p = ghostProfile();
+    const isCode = !!(opts && opts.code);
+    setTimeout(() => { window.api.ghostType(text, isCode ? 32 : p.delay, isCode ? 'normal' : p.mode, isCode); }, 3000);
+  }
+  function startGhostPaste(text) {
+    if (!text) return;
+    addMsg('sys', 'Ghost paste: 3 second me code wahan chipak jayega jahan tum click karoge — perfect format ke saath, ek bhi space galat nahi. Jahan paste karna hai, wahan click kar do.');
+    setTimeout(() => { if (window.api.ghostPaste) window.api.ghostPaste(text); }, 3000);
+  }
+
+  // ---------- Chat UI helpers: scroll, markdown, math ----------
+  let stickBottom = true;
+  let rafPending = false;
+  const scrollDownBtn = document.getElementById('scrollDownBtn');
+  function scrollChat(force) {
+    if (force || stickBottom) {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      if (scrollDownBtn) scrollDownBtn.style.display = 'none';
+    }
+  }
+  function queueScroll() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      scrollChat(false);
+      if (!stickBottom && scrollDownBtn) scrollDownBtn.style.display = 'block';
+    });
+  }
+  if (scrollDownBtn) scrollDownBtn.addEventListener('click', () => { stickBottom = true; scrollChat(true); });
+  messagesEl.addEventListener('scroll', () => {
+    const near = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 60;
+    stickBottom = near;
+    if (scrollDownBtn) scrollDownBtn.style.display = near ? 'none' : 'block';
+  });
+  const offlineBar = document.getElementById('offlineBar');
+  function refreshOnline() { if (offlineBar) offlineBar.style.display = navigator.onLine ? 'none' : 'block'; }
+  window.addEventListener('online', refreshOnline);
+  window.addEventListener('offline', refreshOnline);
+  refreshOnline();
+  messagesEl.addEventListener('click', (e) => {
+    const ebtn = e.target && e.target.closest ? e.target.closest('.expandcode') : null;
+    if (ebtn) { const blk = ebtn.closest('.codeblock'); const code = blk ? blk.querySelector('code') : null; if (code) showCodeOverlay(code.textContent); return; }
+    const wbtn = e.target && e.target.closest ? e.target.closest('.wrapcode') : null;
+    if (wbtn) { const blk = wbtn.closest('.codeblock'); if (blk) blk.classList.toggle('codewrap'); return; }
+    const btn = e.target && e.target.closest ? e.target.closest('.copycode') : null;
+    const gbtn = e.target && e.target.closest ? e.target.closest('.ghostcode') : null;
+    const pbtn = e.target && e.target.closest ? e.target.closest('.pastecode') : null;
+    if (!btn && !gbtn && !pbtn) return;
+    const block = (btn || gbtn || pbtn).closest('.codeblock');
+    const code = block ? block.querySelector('code') : null;
+    if (!code) return;
+    if (pbtn) { startGhostPaste(code.textContent); return; }
+    if (gbtn) { startGhostType(code.textContent, { code: true }); return; }
+    try { navigator.clipboard.writeText(code.textContent); btn.textContent = '✓ Copied'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); } catch (err) { /* ignore */ }
+  });
+  function pruneMessages() {
+    while (messagesEl.children.length > 120) messagesEl.removeChild(messagesEl.firstElementChild);
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function highlightCode(escaped) {
+    return escaped
+      .replace(/(&quot;[^&\n]*?&quot;|&#39;[^&\n]*?&#39;|'[^'\n]*')/g, '<span class="tok-str">$1</span>')
+      .replace(/\b(const|let|var|function|return|if|else|for|while|class|new|await|async|import|from|def|print|true|false|null|None|True|False)\b/g, '<span class="tok-kw">$1</span>')
+      .replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="tok-num">$1</span>')
+      .replace(/(\/\/[^\n]*)/g, '<span class="tok-com">$1</span>');
+  }
+  // Kuch models kabhi code ko ek hi line me daba kar bhej dete hain — Python ke liye
+  // wo code chal hi nahi sakta. Ye halki repair use alag lines + indentation
+  // me badal deti hai. Sirf tab chalti hai jab code ek hi line me aya ho.
+  function repairOneLineCode(code, lang) {
+    const l = String(lang || '').toLowerCase();
+    if (l !== 'python' && l !== 'py') return code;
+    const flat = String(code).trim();
+    if (flat.indexOf('\n') >= 0 || flat.length < 40) return code;
+    const KW = /^(def |class |for |if |elif |while |return |print\(|import |from |with |except|finally|break|continue|pass\b)/;
+    const lines = [];
+    let cur = '';
+    let q = null;
+    let paren = 0;
+    const push = () => { const t = cur.trim(); if (t) lines.push(t); cur = ''; };
+    for (let i = 0; i < flat.length; i++) {
+      const ch = flat[i];
+      if (q) { cur += ch; if (ch === q) q = null; continue; }
+      if (ch === '"' || ch === "'") { q = ch; cur += ch; continue; }
+      if (ch === '(') paren++;
+      if (ch === ')') paren--;
+      if (ch === ':' && flat[i + 1] === ' ' && paren === 0 && /^(def\b|class\b|for\b|if\b|elif\b|else\b|while\b|with\b|try\b|except\b|finally\b)/.test(cur.trim())) {
+        cur += ch; push(); i++; continue;
+      }
+      if (ch === ' ' && cur.trim()) {
+        const rest = flat.slice(i + 1);
+        const m = rest.match(KW);
+        if (m) { push(); cur = m[1]; i += m[1].length; continue; }
+        if (/^else\s*:/.test(rest)) { push(); cur = 'else:'; i += rest.indexOf(':') + 1; continue; }
+        if (/^try\s*:/.test(rest)) { push(); cur = 'try:'; i += rest.indexOf(':') + 1; continue; }
+        if (paren === 0 && !/,\s*$/.test(cur) && /^[A-Za-z_][\w,\s]*=[^=]/.test(rest) && !/^(def|for|if|while|return|with)\b/.test(cur.trim())) { push(); continue; }
+      }
+      cur += ch;
+    }
+    push();
+    let depth = 0;
+    const out = [];
+    for (const ln of lines) {
+      let d = depth;
+      if (/^(elif\b|else\b|except\b|finally\b)/.test(ln)) d = Math.max(0, depth - 1);
+      out.push('    '.repeat(d) + ln);
+      if (ln.endsWith(':')) depth = d + 1;
+    }
+    return out.join('\n');
+  }
+  // Kuch models samjhate waqt points ko ek hi paragraph me daba dete hain
+  // (jaise: "1. pehla 2. dusra * ye * wo") — padhne me ghana aur bekar lagta hai.
+  // Ye halki repair un points ko alag-alag lines par le aati hai.
+  function repairSqueezedText(s) {
+    let t = String(s);
+    t = t.replace(/([:;]) \* /g, '$1\n* ');
+    t = t.replace(/\. \* (?=[\w`])/g, '.\n* ');
+    t = t.replace(/([.!?:]) (\d{1,2})\. (?=[\w`])/g, '$1\n$2. ');
+    return t;
+  }
+  function renderMarkdown(src) {
+    const blocks = [];
+    let s = String(src).replace(/```(\w*)\n?([\s\S]*?)```/g, (m, lang, code) => {
+      const fixedCode = repairOneLineCode(code, lang); blocks.push({ lang: lang, code: fixedCode, fixed: fixedCode !== code });
+      return '\u0001' + (blocks.length - 1) + '\u0001';
+    });
+    s = repairSqueezedText(s);
+    s = escapeHtml(s);
+    s = s.replace(/^### (.*)$/gm, '<h4>$1</h4>').replace(/^## (.*)$/gm, '<h3>$1</h3>').replace(/^# (.*)$/gm, '<h2>$1</h2>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/`([^`]+)`/g, '<code class="inline">$1</code>');
+    s = s.replace(/((?:^\|.*\|\s*$\n?)+)/gm, (m) => {
+      const rows = m.trim().split('\n').map((r) => r.trim()).filter((r) => !/^\|[-: |]+\|$/.test(r));
+      if (!rows.length) return m;
+      const cells = rows.map((r) => r.replace(/^\||\|$/g, '').split('|').map((c) => c.trim()));
+      let h = '<div class="tablewrap"><table>';
+      cells.forEach((r, i) => { h += '<tr>' + r.map((c) => i === 0 ? '<th>' + c + '</th>' : '<td>' + c + '</td>').join('') + '</tr>'; });
+      return h + '</table></div>';
+    });
+    s = s.replace(/(^(?:[ \t]*[-*] .+\n?)+)/gm, (m) => '<ul>' + m.trim().split('\n').map((l) => '<li>' + l.replace(/^[ \t]*[-*] /, '') + '</li>').join('') + '</ul>');
+    s = s.replace(/(^(?:[ \t]*\d+\. .+\n?)+)/gm, (m) => '<ol>' + m.trim().split('\n').map((l) => '<li>' + l.replace(/^[ \t]*\d+\. /, '') + '</li>').join('') + '</ol>');
+    s = s.replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>');
+    s = s.replace(/\u0001(\d+)\u0001/g, (m, i) => {
+      const b = blocks[+i];
+      return '<div class="codeblock"><div class="codehead"><span>' + escapeHtml(b.lang || 'code') + '</span><span><button class="copycode" type="button">Copy</button> <button class="ghostcode" type="button">&#9000; Type</button> <button class="pastecode" type="button">&#128203; Paste</button> <button class="wrapcode" type="button">Wrap</button> <button class="expandcode" type="button">Expand</button></span></div><pre><code>' + highlightCode(escapeHtml(b.code.replace(/\n$/, ''))) + '</code></pre></div>';
+    });
+    return s;
+  }
+  function renderMath(el) {
+    try {
+      if (window.renderMathInElement) {
+        window.renderMathInElement(el, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] });
+      }
+    } catch (e) { /* ignore */ }
+  }
+  let lastUserQ = '';
+  let lastAskImg = null;
+  let currentAskCtx = null;
+  function setSending(on) {
+    if (on) { sendBtn.textContent = '⏹ Stop'; sendBtn.classList.add('stopbtn'); sendBtn.disabled = false; }
+    else { sendBtn.textContent = 'Bhejo'; sendBtn.classList.remove('stopbtn'); sendBtn.disabled = false; }
+  }
+  function growInput() {
+    chatText.style.height = 'auto';
+    chatText.style.height = Math.min(chatText.scrollHeight, 110) + 'px';
+  }
+
+  function addMsg(cls, text, imgUrl) {
+    const d = document.createElement('div');
+    d.className = 'msg ' + cls;
+    if (imgUrl) {
+      const im = document.createElement('img');
+      im.src = imgUrl;
+      d.appendChild(im);
+    }
+    const t = document.createElement('span');
+    t.className = 'txt';
+    t.textContent = text;
+    d.appendChild(t);
+    d._txt = t;
+    if (cls === 'ai') {
+      const st = document.createElement('div');
+      st.className = 'status';
+      d.appendChild(st);
+      d._status = st;
+      const act = document.createElement('div');
+      act.className = 'actions';
+      const cp = document.createElement('button');
+      cp.type = 'button';
+      cp.textContent = '📋 Copy';
+      cp.setAttribute('aria-label', 'Jawab copy karo');
+      cp.addEventListener('click', () => { try { navigator.clipboard.writeText(d._raw || t.textContent); } catch (e) { /* ignore */ } });
+      const rg = document.createElement('button');
+      rg.type = 'button';
+      rg.textContent = '🔄 Dobara';
+      rg.setAttribute('aria-label', 'Jawab dobara banao');
+      rg.addEventListener('click', () => { if (lastUserQ) askAI(lastUserQ); });
+      act.appendChild(cp);
+      act.appendChild(rg);
+      [['💡 Samjhao', 'Upar wale jawab ko aur bhi simple bhasha me samjhao, ek chhota sa example dekar.'], ['✏️ Example', 'Upar wale topic par ek easy, roz-marra ki zindagi wala example do.'], ['⚡ Short', 'Upar wale jawab ko bahut short me, sirf main points me batao.']].forEach((qa) => {
+        const qb = document.createElement('button');
+        qb.type = 'button';
+        qb.textContent = qa[0];
+        qb.setAttribute('aria-label', qa[0]);
+        qb.addEventListener('click', () => askAI(qa[1]));
+        act.appendChild(qb);
+      });
+      const pb = document.createElement('button');
+      pb.type = 'button';
+      pb.textContent = '📌 Pin';
+      pb.setAttribute('aria-label', 'Ye jawab pin karke hamesha ke liye save karo');
+      pb.addEventListener('click', () => { const a = d._raw || t.textContent; if (!a) return; if (!pinsList.some((x) => x.a === a)) { pinsList.unshift({ q: lastUserQ || '', a: a, ts: Date.now() }); if (pinsList.length > 50) pinsList.length = 50; savePins(); renderPins(); } addMsg('sys', '📌 Jawab pin ho gaya — ⚙ Settings ke Pins me hamesha milega.'); });
+      act.appendChild(pb);
+      try { const more = document.createElement('span'); more.className = 'moreActs'; Array.from(act.children).forEach((b) => { if (/Samjhao|Example|Short/.test(b.textContent)) more.appendChild(b); }); const dots = document.createElement('button'); dots.type = 'button'; dots.textContent = '\u2022\u2022\u2022'; dots.setAttribute('aria-label', 'Aur options'); dots.addEventListener('click', () => more.classList.toggle('open')); act.appendChild(dots); act.appendChild(more); } catch (e) { /* ignore */ }
+      d.appendChild(act);
+      d._actions = act;
+      const b = document.createElement('button');
+      b.className = 'spk spk-voice';
+      if (settings.muted !== false) b.style.display = 'none';
+      b.textContent = '\u{1F50A}';
+      b.title = 'Jawab suno';
+      b.setAttribute('aria-label', 'Jawab suno');
+      b.addEventListener('click', () => speakText(t.textContent));
+      d.appendChild(b);
+      const g = document.createElement('button');
+      g.className = 'spk';
+      g.textContent = '\u{2328}';
+      g.title = 'Ghost typing - ye jawab dusri app me khud type hoga';
+      g.setAttribute('aria-label', 'Ghost typing');
+      g.addEventListener('click', () => startGhostType(t.textContent));
+      d.appendChild(g);
+    }
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    d.appendChild(meta);
+    messagesEl.appendChild(d);
+    pruneMessages();
+    scrollChat(true);
+    return d;
+  }
+
+  // ---------- API Providers (main window ke saath shared table) ----------
+
+  // ---------- Screenshot ----------
+  const attachPreview = document.getElementById('attachPreview');
+  const attachImg = document.getElementById('attachImg');
+  document.getElementById('shotBtn').addEventListener('click', async () => {
+    const url = await window.api.captureScreen();
+    if (url) {
+      pendingImage = url;
+      attachImg.src = url;
+      attachPreview.style.display = 'flex';
+    } else {
+      addMsg('sys', 'Screenshot nahi ho paya. Dobara try karo.');
+    }
+  });
+  document.getElementById('removeAttach').addEventListener('click', () => {
+    pendingImage = null;
+    attachPreview.style.display = 'none';
+  });
+
+  // Hotkey (Ctrl+Shift+S) se screenshot: photo ke saath khud sawal bhej do.
+  window.api.onQuickShot(async (url) => {
+    if (!url) { addMsg('sys', 'Screenshot nahi ho paya.'); return; }
+    pendingImage = url;
+    attachImg.src = url;
+    attachPreview.style.display = 'flex';
+    chatText.value = '';
+    await askAI('Is screenshot ko dekho aur isme jo topic ya doubt hai, wo simple bhasha me samjhao.');
+  });
+
+  // ---------- Bol kar doubt (Groq Whisper) ----------
+  const micBtn = document.getElementById('micBtn');
+  let voiceRec = null;
+  let voiceChunks = [];
+  micBtn.addEventListener('click', async () => {
+    if (voiceRec && voiceRec.state === 'recording') { voiceRec.stop(); return; }
+    const keys = await window.api.getKeys();
+    let groqStr = '';
+    try { groqStr = (JSON.parse((keys && keys.providers) || '{}').groq) || ''; } catch (e) { /* ignore */ }
+    if (!groqStr) groqStr = (storeProviders && storeProviders.groq) || groqKeyStr || '';
+    if (!groqStr) { addMsg('sys', 'Bol kar puchhne ke liye Groq key chahiye - main window ke ⚙ Settings page me Groq key daal kar Save karo (free hai, console.groq.com).'); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      voiceChunks = [];
+      voiceRec = new MediaRecorder(stream);
+      voiceRec.ondataavailable = (e) => { if (e.data.size) voiceChunks.push(e.data); };
+      voiceRec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        micBtn.classList.remove('rec');
+        micBtn.innerHTML = '&#127908;';
+        const blob = new Blob(voiceChunks, { type: voiceRec.mimeType || 'audio/webm' });
+        groqKeyStr = groqStr;
+        await transcribe(blob);
+      };
+      voiceRec.start();
+      micBtn.classList.add('rec');
+      micBtn.innerHTML = '&#9209;';
+    } catch (e) {
+      addMsg('sys', 'Mic nahi mila ya permission nahi mili. Mic check karo.');
+    }
+  });
+
+  async function transcribe(blob) {
+    const hint = addMsg('sys', 'Sun liya - samajh raha hoon...');
+    const text = await whisperAny(blob, 'transcriptions');
+    if (text) {
+      hint.remove();
+      chatText.value = text;
+      growInput();
+      chatText.focus();
+      return;
+    }
+    hint.textContent = 'Awaz samajh nahi ayi. Dobara bolo ya likh kar bhejo.';
+  }
+
+  // ---------- AI providers ----------
+  // ---------- Reliability core: cooldown, speed stats, debug log ----------
+  // Usage: float apna usage main-process store ke through jodta hai (dono windows ka total ek jagah).
+
+
+  // ---------- Smart Scheduler (float): duplicate rok + line (queue) ----------
+
+  async function askAIInner(forcedQ) {
+    const keys = await window.api.getKeys();
+    if (keys && keys.settings) settings = Object.assign(settings, keys.settings);
+    refreshFmtUI();
+    if (keys && typeof keys.profile === 'string') myProfile = keys.profile;
+    if (keys && typeof keys.customBoxes === 'string') myCustomBoxes = keys.customBoxes;
+    if (keys && typeof keys.providers === 'string') { try { storeProviders = JSON.parse(keys.providers) || {}; } catch (e) { /* ignore */ } }
+    if (keys && typeof keys.customs === 'string') { try { storeCustoms = JSON.parse(keys.customs) || []; } catch (e) { /* ignore */ } }
+    if (storeProviders.groq) groqKeyStr = storeProviders.groq;
+    const keyBag = { gemini: keys.gemini, providers: storeProviders, customs: storeCustoms };
+    if (keys && typeof keys.usage === 'string') floatUsageStr = keys.usage;
+    if (keys && typeof keys.cache === 'string') floatCacheStr = keys.cache;
+    await mergeSharedState(keys);
+    let q = (typeof forcedQ === 'string' ? forcedQ : chatText.value.trim());
+    if (!q && !pendingImage) return;
+    if (!anyKey(keyBag)) { addMsg('sys', 'Pehle main window ke ⚙ Settings page me kisi ek provider ki API key daal kar Save karo. Wahi key yahan apne aap chalegi.'); return; }
+    if (!q && pendingImage) q = 'Is screenshot ko dekho aur isme jo topic ya doubt hai, wo simple bhasha me samjhao.';
+    if (q.length > 8000) { addMsg('sys', 'Sawal bahut lamba hai (8000 characters se zyada). Thoda chhota karke bhejo.'); return; }
+    if (pendingImage && pendingImage.length > 2000000) { addMsg('sys', 'Photo bahut badi hai. Chhoti photo bhejo.'); return; }
+    const todayReq = usageTodayCount();
+    if (settings.dailyLimit > 0 && todayReq >= settings.dailyLimit) { addMsg('sys', '⛔ Aaj ki API request limit (' + settings.dailyLimit + ') poori ho gayi hai. Main window ki Settings me limit badha sakte ho.'); return; }
+    if (settings.warnAt > 0 && todayReq >= settings.warnAt && !warnedToday) { warnedToday = true; addMsg('sys', '⚠ Aaj ' + todayReq + ' API requests ho chuki hain (warning level: ' + settings.warnAt + ').'); }
+    const bypassCache = !!window.__cacheBypassOnce; window.__cacheBypassOnce = false;
+    if (!pendingImage && settings.cacheEnabled && !bypassCache) {
+      const hit = cacheGet(q);
+      if (hit) {
+        addMsg('user', q.length > 220 ? q.slice(0, 220) + '...' : q);
+        chatText.value = '';
+        growInput();
+        const cb = addMsg('ai', '');
+        cb._raw = hit.a;
+        cb._txt.innerHTML = renderMarkdown(hit.a);
+        cb._txt.classList.add('rendered');
+        renderMath(cb._txt);
+        cb.classList.add('done');
+        convo.push({ who: 'user', text: q });
+        convo.push({ who: 'ai', text: hit.a });
+        persistConvo();
+        lastUserQ = q;
+        const agoMin = Math.max(0, Math.round((Date.now() - (hit.ts || Date.now())) / 60000));
+        const agoTxt = agoMin < 1 ? 'abhi ka' : (agoMin < 60 ? agoMin + ' min pehle ka' : Math.round(agoMin / 60) + ' ghante pehle ka');
+        const cl = document.createElement('div'); cl.className = 'cachelbl';
+        cl.appendChild(document.createTextNode('\u{1F4E6} Cached \u00B7 ' + agoTxt + ' \u00B7 ' + hit.p + (hit.m ? ' (' + hit.m + ')' : '')));
+        const fb = document.createElement('button'); fb.type = 'button'; fb.textContent = 'Naya jawab lao';
+        fb.addEventListener('click', () => { window.__cacheBypassOnce = true; askAI(q); });
+        cl.appendChild(document.createTextNode(' \u00B7 ')); cl.appendChild(fb);
+        cb.appendChild(cl);
+        scrollChat(true);
+        return;
+      }
+    }
+    const imgForThisMsg = pendingImage;
+    lastUserQ = q;
+    lastAskImg = imgForThisMsg;
+    addMsg('user', q.length > 220 ? q.slice(0, 220) + '...' : q, imgForThisMsg || undefined);
+    chatText.value = '';
+    growInput();
+    pendingImage = null;
+    attachPreview.style.display = 'none';
+
+    try { localStorage.setItem('pending_ask_v1', JSON.stringify({ q: q, img: !!imgForThisMsg, ts: Date.now() })); } catch (e) { /* ignore */ }
+    const thinking = addMsg('ai', '');
+    thinking._txt.innerHTML = '<span class="tdots"><i></i><i></i><i></i></span>';
+    const askCtx = { ctrls: new Set(), stopped: false };
+    currentAskCtx = askCtx;
+    setSending(true);
+    lastAiError = '';
+    lastBlocked = [];
+    let ans = null;
+    try { ans = await answerInto(keyBag, q, imgForThisMsg, thinking, askCtx); } catch (e) { ans = null; }
+    currentAskCtx = null;
+    setSending(false);
+    if (!ans && !askCtx.stopped) { const streamedTxt = (thinking._txt.textContent || '').trim(); if (streamedTxt.length >= 40) ans = streamedTxt; }
+    if (askCtx.stopped) {
+      thinking._txt.textContent = '⏹ Jawab rok diya gaya.';
+      if (thinking._status) thinking._status.textContent = '';
+    } else if (ans) {
+      thinking._raw = ans;
+      thinking._txt.innerHTML = renderMarkdown(ans);
+      thinking._txt.classList.add('rendered');
+      renderMath(thinking._txt);
+      thinking.classList.add('done');
+      try { const lm = window.__scpLast; if (lm && lm.pid) { const bd = document.createElement('div'); bd.className = 'ansbadge'; const att = window.__scpAttempts || 1; bd.innerHTML = '<span class="dot' + (att > 1 ? ' amber' : '') + '"></span><span></span>'; bd.querySelector('span:last-child').textContent = (lm.pid === 'gemini' ? 'Gemini' : lm.pid) + (lm.model ? ' \u00B7 ' + lm.model : ''); bd.title = 'Answered by ' + lm.pid + (lm.model ? ' \u00B7 ' + lm.model : '') + (lm.ttft != null ? ' \u00B7 ' + (lm.ttft / 1000).toFixed(1) + 's me pehla shabd' : ''); thinking.appendChild(bd); } } catch (e) { /* ignore */ }
+      if (thinking._status) thinking._status.textContent = '';
+      convo.push({ who: 'user', text: imgForThisMsg ? q + ' [saath me ek screenshot bheja hai]' : q });
+      convo.push({ who: 'ai', text: ans });
+      if (!imgForThisMsg) cacheSet(q, ans);
+    } else {
+      thinking.classList.add('error');
+      const errKind = /429|rate|quota|limit/i.test(lastAiError) ? 'limit' : (/fetch|network|internet|ENOTFOUND|Failed to/i.test(lastAiError) ? 'net' : 'gen');
+      thinking._txt.textContent = errKind === 'limit' ? 'Saare providers abhi rate-limit par hain \u2014 thodi der baad try karo.' : (errKind === 'net' ? 'Internet se jud nahi paya \u2014 connection check karke dobara try karo.' : 'Jawab nahi aa paya. Provider ki taraf se dikkat hai.');
+      const tech = document.createElement('details'); tech.className = 'tech';
+      const tsum = document.createElement('summary'); tsum.textContent = 'Technical details'; tech.appendChild(tsum);
+      const tdiv = document.createElement('div'); tdiv.textContent = (lastAiError ? 'Asli wajah: ' + lastAiError : 'Koi khaas wajah nahi mili.') + (window.__scpLast && window.__scpLast.id ? ' \u00B7 Request ID: ' + window.__scpLast.id : '') + (lastBlocked.length ? ' \u00B7 Approve na hone se skip hue: ' + lastBlocked.join(', ') : '');
+      tech.appendChild(tdiv); thinking.appendChild(tech);
+      if (thinking._status) thinking._status.textContent = '';
+      const rb = document.createElement('button');
+      rb.type = 'button';
+      rb.className = 'retrybtn';
+      rb.textContent = '🔁 Retry';
+      rb.setAttribute('aria-label', 'Dobara try karo');
+      rb.addEventListener('click', () => { thinking.remove(); pendingImage = lastAskImg; askAI(lastUserQ); });
+      thinking.appendChild(rb);
+    }
+    try { localStorage.removeItem('pending_ask_v1'); } catch (e) { /* ignore */ }
+    persistConvo();
+    scrollChat(true);
+  }
+  sendBtn.addEventListener('click', () => { if (currentAskCtx) stopCurrentAsk(); else askAI(); });
+  chatText.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!currentAskCtx) askAI(); } });
+  chatText.addEventListener('input', growInput);
+  chatText.addEventListener('paste', (e) => {
+    try {
+      const items = (e.clipboardData && e.clipboardData.items) || [];
+      for (const it of items) {
+        if (it.type && it.type.indexOf('image/') === 0) {
+          const file = it.getAsFile();
+          if (!file) continue;
+          const reader = new FileReader();
+          reader.onload = () => {
+            pendingImage = reader.result;
+            attachImg.src = reader.result;
+            attachPreview.style.display = 'flex';
+            addMsg('sys', 'Photo paste ho gayi — ab sawal likh kar Bhejo dabao.');
+          };
+          reader.readAsDataURL(file);
+          e.preventDefault();
+          break;
+        }
+      }
+    } catch (err) { /* ignore */ }
+  });
+
+  // Chat clear: poori chat + AI ki is chat ki yaad (convo) saaf — nayi shuruaat.
+  // Chat clear: poori chat + AI ki is chat ki yaad (convo) saaf — nayi shuruaat.
+  function clearChat() {
+    if (listenRec && listenRec.state === 'recording') { addMsg('sys', 'Pehle Live band karo (🎧 dabao), phir chat clear karo.'); return; }
+    convo = [];
+    messagesEl.innerHTML = '';
+    liveMsg = null;
+    draftBubble = null;
+    pendingImage = null;
+    attachPreview.style.display = 'none';
+    addMsg('sys', 'Chat saaf ho gayi. Naya doubt puchho!');
+  }
+  document.getElementById('clearBtn').addEventListener('click', clearChat);
+
+  // Collapse/expand: sirf header + input bar bachta hai. Esc bhi yahi karta hai.
+  function toggleCollapse() { document.body.classList.toggle('collapsed'); }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!document.body.classList.contains('collapsed')) toggleCollapse();
+      else chatText.focus();
+    }
+  });
+
+  // ---------- LIVE CLASS MODE: student bolte-bolte live translation + live draft jawab,
+  // khamoshi (2.5 sec) ya button OFF par final jawab. Sirf tab sunta hai jab ON ho. ----------
+  const listenBtn = document.getElementById('listenBtn');
+  let listenRec = null;
+  let listenChunks = [];
+  let listenStream = null;
+  let listenTimer = null;
+  let liveOn = false;
+  let liveBusy = false;
+  let liveText = '';
+  let liveMsg = null;
+  let liveTickTimer = null;
+  let liveGroqKey = null;
+  let draftBubble = null;
+  let draftBusy = false;
+  let draftForText = '';
+  let draftCount = 0;
+  let liveAudioCtx = null;
+  let liveAnalyser = null;
+  let liveSawSpeech = false;
+  let liveSilence = 0;
+  let liveSilenceTimer = null;
+
+  async function getScreenAudioStream() {
+    const id = await window.api.getScreenSourceId();
+    if (!id) return null;
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: id } },
+      video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: id } }
+    });
+    stream.getVideoTracks().forEach((t) => t.stop());
+    if (!stream.getAudioTracks().length) { stream.getTracks().forEach((t) => t.stop()); return null; }
+    return stream;
+  }
+
+  async function translateAndAsk(blob) {
+    const hint = addMsg('sys', 'Awaz sun li - translate karke samajh raha hoon...');
+    let text = await whisperAny(blob, 'translations');
+    if (!text) text = await whisperAny(blob, 'transcriptions');
+    if (!text) { hint._txt.textContent = 'Awaz saaf samajh nahi ayi. Kuch aur play karke dobara try karo.'; return; }
+    hint.remove();
+    await askAI('Maine screen par chal rahi awaz suni hai. Usme ye kaha gaya (translate karke): "' + text.slice(0, 1500) + '" - Ab isme kya kaha gaya hai wo samjhao, aur agar isme koi sawal ya main topic hai to uska jawab bhi do.');
+  }
+
+  // Bolte-bolte har 5 second me ab tak ki awaz ka translation live line me.
+  async function liveTick() {
+    if (!liveOn || liveBusy || !listenChunks.length || !liveGroqKey) return;
+    liveBusy = true;
+    try {
+      const blob = new Blob(listenChunks, { type: (listenRec && listenRec.mimeType) || 'audio/webm' });
+      let text = await whisperAny(blob, 'translations');
+      if (!text) text = await whisperAny(blob, 'transcriptions');
+      if (text && text !== liveText) {
+        liveText = text;
+        if (liveMsg) liveMsg._txt.textContent = '\u{1F3A7} Interviewer (live): ' + text;
+        maybeDraft();
+      }
+    } catch (e) { /* ignore */ }
+    liveBusy = false;
+  }
+
+  // Sawal bante hi draft jawab bhi banta rahe (streaming) — final jawab rukne par ayega.
+  async function maybeDraft() {
+    if (!liveOn || draftBusy || !liveText || liveText.length < 25 || draftCount >= 6) return;
+    if (liveText === draftForText) return;
+    const keys = await window.api.getKeys().catch(() => null);
+    if (!keys) return;
+    if (keys && typeof keys.providers === 'string') { try { storeProviders = JSON.parse(keys.providers) || {}; } catch (e) { /* ignore */ } }
+    if (keys && typeof keys.customs === 'string') { try { storeCustoms = JSON.parse(keys.customs) || []; } catch (e) { /* ignore */ } }
+    const keyBag = { gemini: keys.gemini, providers: storeProviders, customs: storeCustoms };
+    if (!anyKey(keyBag)) return;
+    draftBusy = true;
+    draftForText = liveText;
+    draftCount++;
+    if (!draftBubble) draftBubble = addMsg('ai', '✏️ Draft jawab taiyaar ho raha hai...');
+    else draftBubble._txt.textContent = '✏️ Draft jawab update ho raha hai...';
+    const q = 'Live class me student ye sawal puch raha hai (sawal abhi chal raha ho sakta hai, jitna suna hai usi par jawab do): "' + liveText.slice(0, 1200) + '" - Iska jawab do.';
+    try { await answerInto(keyBag, q, null, draftBubble); } catch (e) { /* ignore */ }
+    draftBusy = false;
+    if (liveOn && liveText.length > draftForText.length + 20) maybeDraft();
+  }
+
+  // Khamoshi pehchano: student 2.5 second chup = sawal khatm = khud ruk jao (final jawab).
+  function startSilenceWatch() {
+    try {
+      liveAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const srcNode = liveAudioCtx.createMediaStreamSource(listenStream);
+      liveAnalyser = liveAudioCtx.createAnalyser();
+      liveAnalyser.fftSize = 512;
+      srcNode.connect(liveAnalyser);
+      const data = new Uint8Array(liveAnalyser.fftSize);
+      liveSilenceTimer = setInterval(() => {
+        if (!liveOn || !liveAnalyser) return;
+        liveAnalyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; sum += v * v; }
+        const rms = Math.sqrt(sum / data.length);
+        if (rms > 0.03) { liveSawSpeech = true; liveSilence = 0; }
+        else if (liveSawSpeech) {
+          liveSilence += 0.5;
+          if (liveSilence >= 2.5 && listenRec && listenRec.state === 'recording') listenRec.stop();
+        }
+      }, 500);
+    } catch (e) { /* auto-stop nahi chalega to manual stop chalega */ }
+  }
+  function stopSilenceWatch() {
+    if (liveSilenceTimer) { clearInterval(liveSilenceTimer); liveSilenceTimer = null; }
+    if (liveAudioCtx) { try { liveAudioCtx.close(); } catch (e) { /* ignore */ } liveAudioCtx = null; }
+    liveAnalyser = null;
+    liveSawSpeech = false;
+    liveSilence = 0;
+  }
+
+  listenBtn.addEventListener('click', async () => {
+    if (listenRec && listenRec.state === 'recording') { listenRec.stop(); return; }
+    const keys = await window.api.getKeys();
+    let groqStr = '';
+    try { groqStr = (JSON.parse((keys && keys.providers) || '{}').groq) || ''; } catch (e) { /* ignore */ }
+    if (!groqStr) groqStr = (storeProviders && storeProviders.groq) || groqKeyStr || '';
+    if (!groqStr) { addMsg('sys', 'Live Class Mode ke liye Groq key chahiye - main window ke ⚙ Settings page me Groq key daal kar Save karo (free hai, console.groq.com).'); return; }
+    try { listenStream = await getScreenAudioStream(); } catch (e) { listenStream = null; }
+    if (!listenStream) { addMsg('sys', 'Screen ki awaz nahi mili. Pehle kuch play karo (video/class), phir 🎧 dabao.'); return; }
+    listenChunks = [];
+    liveText = '';
+    draftForText = '';
+    draftCount = 0;
+    draftBubble = null;
+    liveGroqKey = groqStr;
+    groqKeyStr = groqStr;
+    listenRec = new MediaRecorder(listenStream);
+    listenRec.ondataavailable = (e) => { if (e.data.size) listenChunks.push(e.data); };
+    listenRec.onstop = async () => {
+      liveOn = false;
+      if (liveTickTimer) { clearInterval(liveTickTimer); liveTickTimer = null; }
+      stopSilenceWatch();
+      listenStream.getTracks().forEach((t) => t.stop());
+      listenBtn.classList.remove('rec');
+      listenBtn.innerHTML = '&#127911;';
+      clearTimeout(listenTimer);
+      if (liveMsg && liveText) liveMsg._txt.textContent = '\u{1F3A7} Student ne pucha: ' + liveText;
+      if (draftBubble) { draftBubble._txt.textContent = '✏️ (Draft) ' + draftBubble._txt.textContent; draftBubble = null; }
+      const blob = new Blob(listenChunks, { type: listenRec.mimeType || 'audio/webm' });
+      await translateAndAsk(blob);
+    };
+    listenRec.start(1000);
+    liveOn = true;
+    listenBtn.classList.add('rec');
+    listenBtn.innerHTML = '&#9209;';
+    liveMsg = addMsg('sys', '\u{1F3A7} Live Class Mode ON - sawal yahan LIVE ayega, jawab bhi banta rahega. Student 2-3 second chup ho to final jawab apne aap aa jayega. Rukne ke liye 🎧 dobara dabao. (Zyada se zyada 4 minute)');
+    liveTickTimer = setInterval(liveTick, 5000);
+    startSilenceWatch();
+    listenTimer = setTimeout(() => { if (listenRec && listenRec.state === 'recording') listenRec.stop(); }, 240000);
+  });
+
+  // ---------- v3.2 crash recovery (float): purani chat wapas + adhoora sawal input me ----------
+  function restoreSavedChat() {
+    try {
+      const raw = localStorage.getItem('saved_convo_v1');
+      if (raw) {
+        const saved = JSON.parse(raw);
+        const ageDays = (Date.now() - (saved.ts || 0)) / 86400000;
+        if (ageDays > (settings.retentionDays || 30)) { localStorage.removeItem('saved_convo_v1'); }
+        else if (saved.items && saved.items.length && !convo.length) {
+          convo = saved.items.slice(-50);
+          convo.forEach((t) => {
+            const d = addMsg(t.who === 'user' ? 'user' : 'ai', '');
+            if (t.who === 'ai') { d._raw = t.text; d._txt.innerHTML = renderMarkdown(t.text); d._txt.classList.add('rendered'); renderMath(d._txt); d.classList.add('done'); }
+            else d._txt.textContent = t.text.length > 220 ? t.text.slice(0, 220) + '...' : t.text;
+          });
+          addMsg('sys', 'Purani chat wapas mil gayi — bina internet ke bhi padh sakte ho.');
+        }
+      }
+      const pend = localStorage.getItem('pending_ask_v1');
+      if (pend) {
+        const p = JSON.parse(pend);
+        localStorage.removeItem('pending_ask_v1');
+        if (p && p.q) {
+          addMsg('sys', '⚠ Pichhla jawab beech me ruk gaya tha. Sawal input me wapas rakh diya hai — Bhejo dabakar khud bhejo; apne aap dobara NAHI bheja gaya.');
+          chatText.value = p.q;
+          growInput();
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }
+  setTimeout(restoreSavedChat, 600);
+</script>
+
+<script>
+/* ===== Perfect Mix 4.1.0 \u2014 float ===== */
+let codeOverlayEl = null;
+function showCodeOverlay(code) {
+  if (!codeOverlayEl) {
+    codeOverlayEl = document.createElement('div'); codeOverlayEl.id = 'codeOverlay';
+    codeOverlayEl.innerHTML = '<div class="box"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><b>Code \u2014 bada view</b><button class="navbtn" type="button">\u2715 Band karo</button></div><pre></pre></div>';
+    codeOverlayEl.querySelector('button').addEventListener('click', () => { codeOverlayEl.style.display = 'none'; });
+    codeOverlayEl.addEventListener('click', (e) => { if (e.target === codeOverlayEl) codeOverlayEl.style.display = 'none'; });
+    document.body.appendChild(codeOverlayEl);
+  }
+  codeOverlayEl.querySelector('pre').textContent = code;
+  codeOverlayEl.style.display = 'flex';
+}
+function applyFontSizeB() { try { document.body.classList.remove('fs-s', 'fs-l'); if (settings.fontSize === 's') document.body.classList.add('fs-s'); if (settings.fontSize === 'l') document.body.classList.add('fs-l'); } catch (e) { /* ignore */ } }
+try {
+  if (typeof loadSettings === 'function') { const _lsB = loadSettings; loadSettings = async function () { const r = await _lsB(); applyFontSizeB(); return r; }; }
+  applyFontSizeB();
+} catch (e) { /* ignore */ }
+
+</script>
+
+<script>
+/* ===== v4.1.2 Float Interactive ===== */
+try {
+  document.querySelectorAll('#chipsRow .chip').forEach((ch) => ch.addEventListener('click', () => {
+    const ais = document.querySelectorAll('.msg.ai');
+    if (!ais.length) { addMsg('sys', 'Pehle ek sawal puchho, phir ye chips usi jawab par kaam karengi.'); return; }
+    askAI(ch.dataset.q);
+  }));
+  const badge = document.getElementById('providerBadge');
+  const psel = document.getElementById('providerSel');
+  if (badge && psel) badge.addEventListener('click', () => { const vals = Array.from(psel.options).map((o) => o.value); let i = vals.indexOf(psel.value); i = (i + 1) % vals.length; psel.value = vals[i]; psel.dispatchEvent(new Event('change')); });
+  const sizesF = [{ w: 340, h: 460, n: 'S' }, { w: 400, h: 560, n: 'M' }, { w: 520, h: 700, n: 'L' }];
+  const szb = document.getElementById('sizeBtnF');
+  if (szb) szb.addEventListener('click', () => { let cur = sizesF.findIndex((s) => settings.floatSize && settings.floatSize.w === s.w); cur = (cur + 1) % 3; settings.floatSize = { w: sizesF[cur].w, h: sizesF[cur].h }; try { saveFmtSettings(); } catch (e) { /* ignore */ } if (window.api && window.api.setFloatSize) window.api.setFloatSize(sizesF[cur].w, sizesF[cur].h); szb.title = 'Size badlo \u2014 abhi: ' + sizesF[cur].n + ' (phir dabao to agla size)'; });
+  setInterval(() => { try { document.body.classList.toggle('listening', typeof liveOn !== 'undefined' && !!liveOn); } catch (e) { /* ignore */ } }, 500);
+  messagesEl.addEventListener('dblclick', (e) => { const m = e.target && e.target.closest ? e.target.closest('.msg.ai') : null; if (!m || !m._txt) return; try { navigator.clipboard.writeText(m._txt.textContent); m.style.outline = '2px solid var(--accent)'; setTimeout(() => { m.style.outline = ''; }, 450); } catch (err) { /* ignore */ } });
+  const growF = () => { chatText.style.height = 'auto'; chatText.style.height = Math.min(chatText.scrollHeight, 110) + 'px'; };
+  chatText.addEventListener('input', growF); growF();
+} catch (e) { /* ignore */ }
+</script>
+
+<script>
+/* ===== Veltrix 5.0 float: status strip ===== */
+try {
+  setInterval(() => {
+    try {
+      const p = document.getElementById('stProvider'); const s = document.getElementById('stSpeed'); const l = document.getElementById('stLive');
+      const ps = document.getElementById('providerSel'); if (p && ps) p.textContent = ps.options[ps.selectedIndex].text;
+      const gs = document.getElementById('ghostSpeed'); if (s && gs) s.textContent = gs.options[gs.selectedIndex].text;
+      const on = (typeof liveOn !== 'undefined' && !!liveOn); if (l) { l.textContent = on ? 'Live: ON' : 'Live: Off'; l.classList.toggle('on', on); }
+    } catch (e) { /* ignore */ }
+  }, 600);
+} catch (e) { /* ignore */ }
+</script>
+
+
+<script>
+/* ===== Intervue 1.1: timer + length ===== */
+try {
+  const lgSel = document.getElementById('langSel'); if (lgSel) { lgSel.value = 'en'; settings.lang = 'en'; }
+  const ls = document.getElementById('ivLenSel');
+  if (ls) { ls.value = settings.ivLen || 'normal'; ls.addEventListener('change', () => { settings.ivLen = ls.value; try { saveFmtSettings(); } catch (e) { /* ignore */ } }); }
+  let t0 = null;
+  setInterval(() => {
+    try {
+      const el = document.getElementById('stTimer'); if (!el) return;
+      const on = (typeof liveOn !== 'undefined' && !!liveOn);
+      if (on && !t0) t0 = Date.now();
+      if (t0) { const s = Math.floor((Date.now() - t0) / 1000); const mm = String(Math.floor(s / 60)).padStart(2, '0'); const ss = String(s % 60).padStart(2, '0'); el.textContent = '⏱ ' + mm + ':' + ss; }
+    } catch (e) { /* ignore */ }
+  }, 1000);
+} catch (e) { /* ignore */ }
+</script>
+
+<script>
+/* ===== Intervue 1.1.2: chips row wheel scroll ===== */
+try {
+  const cr = document.getElementById('chipsRow');
+  if (cr) cr.addEventListener('wheel', (e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { cr.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+} catch (e) { /* ignore */ }
+</script>
+
+<div id="resizeGrip" title="Kheench kar window bada / chhota karo">&#9698;</div>
+<script>
+/* ===== Intervue 1.2: drag resize grip ===== */
+try {
+  const grip = document.getElementById('resizeGrip');
+  if (grip) grip.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const sx = e.screenX, sy = e.screenY, sw = window.innerWidth, sh = window.innerHeight;
+    let lastW = sw, lastH = sh;
+    const mv = (ev) => { lastW = Math.min(900, Math.max(280, sw + (ev.screenX - sx))); lastH = Math.min(1000, Math.max(320, sh + (ev.screenY - sy))); if (window.api && window.api.setFloatSize) window.api.setFloatSize(lastW, lastH); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); try { settings.floatSize = { w: lastW, h: lastH }; saveFmtSettings(); } catch (err) { /* ignore */ } };
+    document.addEventListener('mousemove', mv);
+    document.addEventListener('mouseup', up);
+  });
+} catch (e) { /* ignore */ }
+</script>
+</body>
+</html>

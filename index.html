@@ -1,0 +1,2829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file: 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' file: 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' file: data: https://cdn.jsdelivr.net; img-src 'self' file: data: blob:; media-src 'self' file: blob: data:; connect-src https:; object-src 'none'; base-uri 'self'">
+<title>Veltrix AI - Model</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #12141a;
+    color: #e8eaf0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Top bar */
+  .topbar {
+    height: 56px;
+    background: #1a1d26;
+    border-bottom: 1px solid #2a2e3d;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .logo {
+    width: 32px; height: 32px;
+    background: #1a73e8;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 18px; color: #fff;
+  }
+  .topbar h1 { font-size: 17px; font-weight: 600; }
+  .navbtn {
+    background: #232735;
+    color: #c6cad8;
+    border: 1px solid #2a2e3d;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    cursor: pointer;
+  }
+  .navbtn:hover { background: #2b3042; color: #fff; }
+  .navbtn.active { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+  .topbar .badge {
+    margin-left: auto;
+    background: #14331f;
+    color: #4ade80;
+    border: 1px solid #22c55e;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* Protection notice strip */
+  .notice {
+    background: #3a2f10;
+    color: #fbbf24;
+    border-bottom: 1px solid #92600a;
+    padding: 9px 20px;
+    font-size: 13.5px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+  .view.active { display: flex; }
+
+  /* Home view: 2 big options */
+  .home-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    padding: 30px;
+  }
+  .home-wrap h2 { font-size: 24px; font-weight: 700; }
+  .home-wrap p { color: #8b90a3; font-size: 14.5px; margin-top: -14px; }
+  .cards { display: flex; gap: 24px; }
+  .card {
+    width: 300px;
+    background: #1a1d26;
+    border: 1px solid #2a2e3d;
+    border-radius: 16px;
+    padding: 34px 26px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .card:hover { border-color: #1a73e8; background: #1d2231; }
+  .card .icon { font-size: 46px; margin-bottom: 14px; }
+  .card .card-title { font-size: 19px; font-weight: 700; margin-bottom: 8px; }
+  .card .card-sub { font-size: 13.5px; color: #8b90a3; line-height: 1.5; }
+
+  /* Classes layout */
+  .layout { display: flex; flex: 1; min-height: 0; }
+  .sidebar {
+    width: 300px;
+    background: #171a22;
+    border-right: 1px solid #2a2e3d;
+    overflow-y: auto;
+    flex-shrink: 0;
+    padding: 14px 0;
+  }
+  .course { margin-bottom: 10px; }
+  .course-title { padding: 10px 18px 6px; font-size: 14px; font-weight: 700; color: #fff; }
+  .course-meta { padding: 0 18px 6px; font-size: 11.5px; color: #8b90a3; }
+  .lesson {
+    padding: 8px 18px 8px 30px;
+    font-size: 13.5px;
+    color: #c6cad8;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+  }
+  .lesson:hover { background: #1f232f; }
+  .lesson.active { background: #1f2739; border-left-color: #1a73e8; color: #fff; }
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    min-width: 0;
+  }
+  .now-playing { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+  .now-playing span { color: #8b90a3; font-weight: 400; }
+  video {
+    width: 100%;
+    max-height: calc(100vh - 280px);
+    background: #000;
+    border-radius: 10px;
+    outline: none;
+  }
+  .hint { margin-top: 14px; font-size: 13px; color: #8b90a3; line-height: 1.6; }
+  .hint b { color: #c6cad8; }
+
+  /* Chat view */
+  .keybar {
+    background: #171a22;
+    border-bottom: 1px solid #2a2e3d;
+    padding: 10px 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 13px;
+    color: #8b90a3;
+  }
+  .keybar input {
+    flex: 1;
+    background: #12141a;
+    border: 1px solid #2a2e3d;
+    border-radius: 8px;
+    color: #e8eaf0;
+    padding: 8px 12px;
+    font-size: 13.5px;
+  }
+  .keybar button, .sendbtn {
+    background: #1a73e8;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    cursor: pointer;
+  }
+  .keybar button:hover, .sendbtn:hover { background: #2b7de0; }
+  .keybar .ok { color: #4ade80; font-weight: 600; }
+  .keybar select {
+    background: #12141a;
+    border: 1px solid #2a2e3d;
+    border-radius: 8px;
+    color: #e8eaf0;
+    padding: 7px 10px;
+    font-size: 13.5px;
+  }
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-family: 'Noto Sans', 'Inter', 'Segoe UI', system-ui, sans-serif;
+    scrollbar-width: thin;
+  }
+  .msg {
+    max-width: 85%;
+    padding: 11px 15px;
+    border-radius: 14px;
+    font-size: 14.5px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    animation: msgIn .18s ease;
+    position: relative;
+  }
+  @keyframes msgIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .msg.user { background: #1a73e8; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+  .msg.ai { background: #1f232f; color: #e8eaf0; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .msg.sys { background: transparent; color: #8b90a3; align-self: center; font-size: 13px; text-align: center; }
+  .msg .txt { white-space: pre-wrap; }
+  .msg .txt.rendered { white-space: normal; }
+  .msg .meta { font-size: 11px; color: #8b90a3; opacity: 0; transition: opacity .15s ease; margin-top: 4px; text-align: right; }
+  .msg:hover .meta { opacity: .75; }
+  .msg .status { font-size: 12px; color: #fbbf24; margin-top: 6px; min-height: 0; }
+  .msg .actions { display: none; gap: 6px; margin-top: 8px; }
+  .msg.done .actions { display: flex; }
+  .msg .actions button, .msg .retrybtn {
+    background: #2b3042; color: #e8eaf0; border: 1px solid #3a405a; border-radius: 7px;
+    padding: 4px 10px; font-size: 12px; cursor: pointer; transition: background .15s ease;
+  }
+  .msg .actions button:hover, .msg .retrybtn:hover { background: #3a405a; }
+  .msg.error { background: #3b1d24; border: 1px solid #b3402f; color: #fecaca; }
+  .tdots { display: inline-flex; gap: 5px; padding: 4px 2px; }
+  .tdots i { width: 7px; height: 7px; border-radius: 50%; background: #9aa3b8; animation: tblink 1.2s infinite; }
+  .tdots i:nth-child(2) { animation-delay: .18s; }
+  .tdots i:nth-child(3) { animation-delay: .36s; }
+  @keyframes tblink { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-2px); } }
+  .msg .txt h2, .msg .txt h3, .msg .txt h4 { margin: 8px 0 4px; line-height: 1.3; }
+  .msg .txt ul, .msg .txt ol { margin: 6px 0 6px 18px; padding: 0; }
+  .msg .txt code.inline { background: #12141a; border: 1px solid #2a2e3d; border-radius: 5px; padding: 1px 5px; font-size: 13px; }
+  .codeblock { background: #0b0e14; border: 1px solid #2a2e3d; border-radius: 10px; margin: 8px 0; overflow: hidden; }
+  .codehead { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; background: #171a22; font-size: 11.5px; color: #8b90a3; }
+  .codehead button { background: #2b3042; color: #e8eaf0; border: none; border-radius: 6px; padding: 3px 9px; font-size: 11.5px; cursor: pointer; }
+  .codeblock pre { margin: 0; padding: 10px 12px; overflow-x: auto; font-size: 13px; line-height: 1.45; }
+  .tok-kw { color: #c792ea; } .tok-str { color: #9ccc65; } .tok-num { color: #f78c6c; } .tok-com { color: #5f6b85; font-style: italic; }
+  .tablewrap { overflow-x: auto; margin: 8px 0; }
+  .tablewrap table { border-collapse: collapse; font-size: 13.5px; }
+  .tablewrap th, .tablewrap td { border: 1px solid #2a2e3d; padding: 5px 9px; text-align: left; }
+  .tablewrap th { background: #171a22; }
+  .chathead { display: flex; align-items: center; gap: 10px; padding: 9px 20px; border-bottom: 1px solid #2a2e3d; background: #171a22; }
+  .badge { background: #14331f; color: #4ade80; border: 1px solid #22c55e; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 600; }
+  .chathead select { background: #12141a; border: 1px solid #2a2e3d; border-radius: 8px; color: #e8eaf0; padding: 6px 9px; font-size: 13px; }
+  .offlinebar { background: #7c2d12; color: #ffedd5; text-align: center; font-size: 13px; padding: 7px 10px; }
+  .scrolldown { position: absolute; right: 22px; bottom: 92px; z-index: 5; background: #1a73e8; color: #fff; border: none; border-radius: 999px; padding: 7px 14px; font-size: 12.5px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+  .chatwrap { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #3a405a; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid #1a73e8; outline-offset: 1px; }
+  .stopbtn { background: #b3402f !important; }
+  .stopbtn:hover { background: #c44a35 !important; }
+  /* Light theme (Settings se chuna jata hai) */
+  [data-theme="light"] body { background: #eef1f6; color: #14161c; }
+  [data-theme="light"] .msg.ai { background: #ffffff; color: #14161c; border: 1px solid #d4d9e2; }
+  [data-theme="light"] .msg.sys { color: #5b6172; }
+  [data-theme="light"] .keybar, [data-theme="light"] .chat-input, [data-theme="light"] .chathead { background: #ffffff; border-color: #d4d9e2; color: #14161c; }
+  [data-theme="light"] .keybar input, [data-theme="light"] .keybar select, [data-theme="light"] .keybar textarea, [data-theme="light"] .chat-input textarea, [data-theme="light"] .chathead select { background: #f4f6fa; color: #14161c; border-color: #c3cad6; }
+  [data-theme="light"] .msg .txt code.inline { background: #eef1f6; border-color: #c3cad6; }
+  [data-theme="light"] .codeblock { background: #0b0e14; }
+  .chat-input {
+    display: flex;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid #2a2e3d;
+    background: #171a22;
+  }
+  .chat-input input, .chat-input textarea {
+    flex: 1;
+    background: #12141a;
+    border: 1px solid #2a2e3d;
+    border-radius: 10px;
+    color: #e8eaf0;
+    padding: 11px 14px;
+    font-size: 14.5px;
+    font-family: inherit;
+    resize: none;
+    max-height: 132px;
+    overflow-y: auto;
+  }
+  .attach-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: #14331f;
+    border-top: 1px solid #22c55e;
+    font-size: 13.5px;
+    color: #c6cad8;
+  }
+  .attach-preview img {
+    height: 56px;
+    border-radius: 6px;
+    border: 1px solid #22c55e;
+  }
+  .msg img {
+    display: block;
+    max-width: 100%;
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  .spk {
+    display: inline-block;
+    margin-left: 8px;
+    background: #2b3042;
+    border: 1px solid #3a405a;
+    color: #fff;
+    border-radius: 6px;
+    padding: 1px 7px;
+    font-size: 12px;
+    cursor: pointer;
+    vertical-align: middle;
+  }
+
+  /* Recorder view */
+  .rec-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 30px;
+  }
+  .rec-wrap h2 { font-size: 22px; font-weight: 700; }
+  .rec-toggles {
+    background: #1a1d26;
+    border: 1px solid #2a2e3d;
+    border-radius: 14px;
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 380px;
+  }
+  .rec-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 15px;
+  }
+  .rec-toggle-row .desc { color: #8b90a3; font-size: 12.5px; margin-left: auto; }
+  .switch { position: relative; width: 48px; height: 26px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0;
+    background: #2a2e3d; border-radius: 20px; cursor: pointer; transition: 0.2s;
+  }
+  .slider:before {
+    content: "";
+    position: absolute; width: 20px; height: 20px; border-radius: 50%;
+    left: 3px; top: 3px; background: #8b90a3; transition: 0.2s;
+  }
+  .switch input:checked + .slider { background: #14532d; }
+  .switch input:checked + .slider:before { transform: translateX(22px); background: #4ade80; }
+  .recbtn {
+    width: 92px; height: 92px; border-radius: 50%;
+    background: #b91c1c; border: 4px solid #7f1d1d;
+    color: #fff; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  .recbtn:hover { background: #dc2626; }
+  .recbtn.on { background: #450a0a; border-color: #dc2626; }
+  .rec-time { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .rec-status { font-size: 13.5px; color: #8b90a3; text-align: center; max-width: 520px; line-height: 1.5; }
+  .rec-actions { display: flex; gap: 12px; align-items: center; }
+  .rec-actions audio { height: 38px; }
+  .inputrow-rec { background: #b91c1c !important; color: #fff !important; border-color: #b91c1c !important; }
+  .sectionTitle { font-weight: 700; font-size: 15px; padding: 10px 12px; border-left: 4px solid #1a73e8; background: rgba(26,115,232,0.10); border-radius: 8px; margin-top: 10px; }
+  /* ===== UX Polish (v3.4.0): saare button ek jaise, sahi spacing, saaf experience ===== */
+  button { border-radius: 10px; font-family: inherit; cursor: pointer; transition: filter 0.15s ease, transform 0.05s ease, opacity 0.15s ease; }
+  button:hover { filter: brightness(1.12); }
+  button:active { transform: scale(0.97); }
+  button:focus-visible { outline: 2px solid #1a73e8; outline-offset: 1px; }
+  button:disabled { opacity: 0.5; cursor: default; transform: none; }
+  .navbtn, .keybar button { padding: 8px 14px; font-size: 13px; font-weight: 600; border-radius: 10px; }
+  .keybar { gap: 8px; padding: 12px; align-items: center; }
+  .keybar input[type="password"], .keybar input[type="text"], .keybar select { border-radius: 8px; padding: 7px 9px; }
+  #sendBtn { font-weight: 700; padding: 9px 18px; }
+  select, textarea { border-radius: 8px; }
+  /* Presentation v3.6 — saaf padhai: word-wrap, spacing */
+  .msg { line-height: 1.65; overflow-wrap: anywhere; }
+  .msg p { margin: 0 0 9px; }
+  .msg ul, .msg ol { margin: 4px 0 10px; padding-left: 22px; }
+  .msg li { margin: 3px 0; }
+  .msg h1, .msg h2, .msg h3, .msg h4 { margin: 12px 0 6px; line-height: 1.35; }
+  .codeblock pre { line-height: 1.55; }
+  /* ===== v3.7 Redesign — tokens, custom titlebar, sidebar, flat messages ===== */
+  :root { --bg:#101216; --surface:#17191F; --line:#26292F; --text:#E8EAED; --muted:#9AA0A6; --accent:#2F7CF6; }
+  [data-theme="light"] { --bg:#F7F8FA; --surface:#FFFFFF; --line:#E2E5EA; --text:#17191D; --muted:#5F6368; }
+  body { background: var(--bg); color: var(--text); }
+  .topbar { -webkit-app-region: drag; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .topbar button, .topbar select, .topbar input { -webkit-app-region: no-drag; }
+  .winctl { display: flex; gap: 2px; margin-left: 10px; align-items: center; }
+  .winctl button { width: 42px; height: 30px; border: none; border-radius: 8px; background: transparent; color: var(--muted); font-size: 13px; cursor: pointer; }
+  .winctl button:hover { background: rgba(127,127,127,.18); color: var(--text); }
+  .winctl #winClose:hover { background: #D64545; color: #fff; }
+  .navbtn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chatlayout { display: flex; flex: 1; min-height: 0; }
+  .chatside { width: 238px; flex: 0 0 238px; border-right: 1px solid var(--line); background: var(--surface); padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+  .chatside.hidden { display: none; }
+  .chatmain { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .newchatbtn { background: var(--accent); color: #fff; border: none; border-radius: 10px; padding: 9px 12px; font-weight: 600; font-size: 13.5px; cursor: pointer; width: 100%; }
+  .newchatbtn:hover { filter: brightness(1.12); }
+  .msg.user { background: rgba(47,124,246,.16); color: var(--text); border: 1px solid rgba(47,124,246,.28); }
+  .msg.ai { background: transparent; border: none; box-shadow: none; align-self: stretch; max-width: 100%; border-radius: 0; padding-left: 2px; padding-right: 2px; }
+  [data-theme="light"] .msg.ai { background: transparent; border: none; color: var(--text); }
+  [data-theme="light"] .msg.user { background: rgba(47,124,246,.12); color: var(--text); }
+  .msg.error { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid #E0A13E; color: var(--text); }
+  .msg .actions { opacity: 0; transition: opacity .15s ease; }
+  .msg:hover .actions, .msg:focus-within .actions { opacity: 1; }
+  .badge::before { content: '● '; color: #34C759; font-size: 10px; }
+  .chathead { background: var(--surface); border-bottom: 1px solid var(--line); }
+  .chat-input { background: var(--surface); border-top: 1px solid var(--line); }
+  .sendbtn { background: var(--accent); color: #fff; }
+  #chatText { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 12px; }
+  #providerQuick { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 6px; max-width: 150px; }
+
+  .msg h2 { font-size: 17px; } .msg h3 { font-size: 15.5px; } .msg h4 { font-size: 14.5px; } .msg strong { font-weight: 700; }
+
+/* ===== Design A (UX Redesign) ===== */
+.msg.user { align-self: flex-start; background: transparent; border: none; border-left: 2px solid var(--accent); border-radius: 0; padding: 2px 4px 2px 12px; max-width: 92%; }
+#sendBtn { transition: all .18s ease; }
+.msg.ai:not(.done):not(.error) .txt:empty::after { content: '\25CF'; color: var(--muted); animation: apulse 1.1s ease-in-out infinite; }
+.msg.ai:not(.done):not(.error) .txt:not(:empty)::after { content: '\258D'; color: var(--accent); animation: apulse .8s steps(1) infinite; margin-left: 1px; }
+@keyframes apulse { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+.ansbadge { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 2px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: 11.5px; color: var(--muted); background: var(--surface); cursor: default; }
+.ansbadge .dot { width: 8px; height: 8px; border-radius: 50%; background: #34C759; }
+.ansbadge .dot.amber { background: #E0A13E; }
+.ansbadge .dot.grey { background: #9AA0A6; }
+.actions .moreActs { display: none; gap: 6px; flex-wrap: wrap; }
+.actions .moreActs.open { display: inline-flex; }
+#dupToast { position: sticky; bottom: 76px; margin: 0 auto 8px; width: fit-content; max-width: 92%; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-left: 3px solid #E0A13E; border-radius: 10px; padding: 8px 14px; font-size: 13px; box-shadow: var(--hatch-widget-shadow, 0 4px 18px rgba(0,0,0,.25)); z-index: 5; }
+#limitBar { margin: 0 12px 6px; }
+#limitBar .track { height: 6px; border-radius: 3px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
+#limitFill { height: 100%; width: 0%; background: var(--accent); transition: width .3s ease; }
+#limitFill.amber { background: #E0A13E; } #limitFill.red { background: #D64545; }
+#limitText { font-size: 11.5px; color: var(--muted); }
+#rememberStrip { margin: 0 12px 6px; font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; cursor: pointer; }
+#rememberStrip .rdet { display: none; margin-top: 4px; }
+#rememberStrip.open .rdet { display: block; }
+.linkglyph { color: var(--muted); font-size: 9px; letter-spacing: 2px; margin-left: 6px; }
+.linkglyph.pulse { color: #34C759; transition: color .2s; }
+.tutorlbl { font-size: 11px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; margin-left: 6px; }
+.cachelbl { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.cachelbl button { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 12px; text-decoration: underline; padding: 0; }
+details.tech { margin-top: 8px; font-size: 12px; color: var(--muted); }
+details.tech summary { cursor: pointer; }
+.setTabBar { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 10px; }
+.setTabBar button { border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
+.setTabBar button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pcard { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface); min-width: 200px; flex: 1; }
+.pcard .pdot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; background: #9AA0A6; }
+.pcard .pdot.green { background: #34C759; } .pcard .pdot.red { background: #D64545; } .pcard .pdot.amber { background: #E0A13E; }
+.pcard .pmeta { font-size: 12px; color: var(--muted); margin: 4px 0 8px; }
+.codewrap pre { white-space: pre-wrap; word-break: break-word; }
+.repairic { cursor: help; font-size: 11px; opacity: .8; }
+
+/* ===== Perfect Mix 4.1.0 ===== */
+body.fs-s .msg { font-size: 13px; }
+body.fs-l .msg { font-size: 16.5px; }
+body.fs-l .msg .txt { line-height: 1.75; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+#healthDot { width: 9px; height: 9px; border-radius: 50%; background: #9AA0A6; display: inline-block; margin-left: 2px; }
+#healthDot.green { background: #34C759; } #healthDot.amber { background: #E0A13E; } #healthDot.red { background: #D64545; }
+#activityLine { display: none; margin: 0 12px 6px; font-size: 12px; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; }
+#chatSearch { width: 100%; box-sizing: border-box; margin: 6px 0; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+#codeOverlay { position: fixed; inset: 0; background: rgba(0,0,0,.62); display: none; align-items: center; justify-content: center; z-index: 9999; }
+#codeOverlay .box { background: var(--surface); color: var(--text); width: min(92vw, 900px); max-height: 88vh; overflow: auto; padding: 14px; border-radius: 12px; border: 1px solid var(--line); }
+#codeOverlay pre { white-space: pre; overflow: auto; font-size: 13.5px; line-height: 1.6; }
+.chatgroup { font-size: 11.5px; font-weight: 700; opacity: .65; padding: 8px 2px 2px; letter-spacing: .4px; }
+
+/* ===== Veltrix 5.0 ===== */
+:root { --ok: #34C759; --warn: #E0A13E; --bad: #D64545; }
+.navbtn.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+#chipsRow { display: flex; gap: 6px; overflow-x: auto; padding: 7px 10px 3px; scrollbar-width: none; }
+#chipsRow::-webkit-scrollbar { display: none; }
+.chip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; cursor: pointer; transition: all .13s ease; }
+.chip:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+.chip:active { transform: scale(.95); }
+
+/* ===== v5.1 Interview Screen ===== */
+#ivPanel { background: var(--surface); border-bottom: 2px solid var(--accent); padding: 10px 12px; display: none; flex-direction: column; gap: 8px; }
+#ivPanel .ivHead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#ivPanel .ivState { font-size: 12px; color: var(--muted); }
+#ivPanel .ivRow { display: flex; gap: 8px; align-items: flex-start; flex-wrap: wrap; }
+#ivResumeState { font-size: 12.5px; padding-top: 6px; white-space: nowrap; }
+#ivPanel .pchip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); color: var(--text); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; cursor: pointer; }
+#ivPanel .pchip:hover { border-color: var(--accent); color: var(--accent); }
+#optPanel { width: 320px; flex: 0 0 auto; border-left: 1px solid var(--line); background: var(--surface); display: none; flex-direction: column; position: relative; min-height: 0; }
+#optPanel.open { display: flex; }
+#optDrag { position: absolute; left: -3px; top: 0; bottom: 0; width: 7px; cursor: ew-resize; z-index: 6; }
+.optHead { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+#optPanel #ivPanel { display: flex !important; flex: 1; overflow-y: auto; border-bottom: none; width: 100%; box-sizing: border-box; }
+#prepRow { display: flex; gap: 6px; overflow-x: auto; padding: 7px 10px 0; scrollbar-width: none; }
+#prepRow::-webkit-scrollbar { display: none; }
+#prepRow .pchip { flex: 0 0 auto; border: 1px solid var(--accent); background: var(--surface); color: var(--text); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; cursor: pointer; }
+#prepRow .pchip:hover { background: var(--accent); color: #fff; }
+#jdText { width: 100%; box-sizing: border-box; }
+[data-theme="glass"] { --bg:#0B1026; --surface:rgba(255,255,255,0.06); --line:rgba(255,255,255,0.16); --text:#F2F5FF; --muted:#A7B0CC; }
+[data-theme="glass"] body { background: linear-gradient(135deg, #0B1026 0%, #16265E 55%, #1E3E75 100%); color: var(--text); }
+[data-theme="glass"] .chatside, [data-theme="glass"] #optPanel, [data-theme="glass"] .chathead, [data-theme="glass"] .chat-input, [data-theme="glass"] .keybar { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.16); }
+[data-theme="glass"] .msg.user { background: rgba(47,124,246,0.30); color: #ffffff; }
+[data-theme="glass"] .codeblock { background: #070B18; border: 1px solid rgba(255,255,255,0.18); }
+[data-theme="glass"] .chip, [data-theme="glass"] .navbtn, [data-theme="glass"] #prepRow .pchip { background: rgba(255,255,255,0.07); border-color: rgba(255,255,255,0.20); color: var(--text); }
+[data-theme="glass"] textarea, [data-theme="glass"] input, [data-theme="glass"] select { background: rgba(255,255,255,0.07); color: var(--text); border-color: rgba(255,255,255,0.20); }
+[data-theme="glass"] select option { color: #14161c; }
+
+#ivNotes { flex: 1; min-width: 240px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 7px 9px; font-family: inherit; font-size: 13px; resize: vertical; }
+#jdText { flex: 1; min-width: 240px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 9px; padding: 7px 9px; font-family: inherit; font-size: 13px; resize: vertical; }
+
+/* ===== Intervue AI: sirf interview ===== */
+</style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="logo">I</div>
+    <h1>Intervue AI &mdash; Interview Prep</h1>
+    <button class="navbtn" id="navInterview">&#127919; Interview</button>
+    <button class="navbtn" id="navSettings">&#9881; Settings</button>
+    <button class="navbtn" id="navFloat">Floating Chat</button>
+    <div class="badge">&#128274; PROTECTION ON</div>
+    <div class="winctl">
+      <button id="winMin" title="Minimize" aria-label="Minimize">&#8212;</button>
+      <button id="winMax" title="Bada / Chhota" aria-label="Maximize">&#9634;</button>
+      <button id="winClose" title="Band karo — app chhupega, quit nahi hoga" aria-label="Band karo">&#10005;</button>
+    </div>
+  </div>
+
+  <!-- Notice strip -->
+  <div class="notice">
+    Protection ON: screenshot / recording / screen-share par ye window bilkul gayab rahegi &mdash; khud test karo. Taskbar me bhi koi icon nahi hai.
+  </div>
+
+  <!-- HOME VIEW: 2 options -->
+  <div class="view active" id="homeView">
+    <div class="home-wrap">
+      <h2>Kya karna hai aaj?</h2>
+      <p>Ek option chuno</p>
+      <div class="cards">
+        <div class="card" id="cardClasses">
+          <div class="icon">&#127891;</div>
+          <div class="card-title">Class Dekho</div>
+          <div class="card-sub">Video classes dekho &mdash; saare courses aur lessons, poori protection ke saath.</div>
+        </div>
+        <div class="card" id="cardChat">
+          <div class="icon">&#128172;</div>
+          <div class="card-title">Doubt Puchho</div>
+          <div class="card-sub">AI teacher se apna koi bhi doubt puchho &mdash; turant simple bhasha me jawab milega.</div>
+        </div>
+        <div class="card" id="cardRecorder">
+          <div class="icon">&#127908;</div>
+          <div class="card-title">Voice Record Karo</div>
+          <div class="card-sub">Screen ki awaz aur apni mic ki awaz record karo &mdash; dono ke alag On/Off switch ke saath.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLASSES VIEW -->
+  <div class="view" id="classesView">
+    <div class="layout">
+      <div class="sidebar" id="sidebar">
+        <div class="course">
+          <div class="course-title">Course 1: Trading Basics</div>
+          <div class="course-meta">Demo course &middot; 3 lessons</div>
+          <div class="lesson active" data-title="Lesson 1: Market kya hota hai">Lesson 1: Market kya hota hai</div>
+          <div class="lesson" data-title="Lesson 2: Candlestick samjho">Lesson 2: Candlestick samjho</div>
+          <div class="lesson" data-title="Lesson 3: Risk management">Lesson 3: Risk management</div>
+        </div>
+        <div class="course">
+          <div class="course-title">Course 2: English Speaking</div>
+          <div class="course-meta">Demo course &middot; 2 lessons</div>
+          <div class="lesson" data-title="Lesson 1: Daily sentences">Lesson 1: Daily sentences</div>
+          <div class="lesson" data-title="Lesson 2: Interview practice">Lesson 2: Interview practice</div>
+        </div>
+        <div class="course">
+          <div class="course-title">Course 3: Maths Foundation</div>
+          <div class="course-meta">Demo course &middot; 3 lessons</div>
+          <div class="lesson" data-title="Lesson 1: Percentage tricks">Lesson 1: Percentage tricks</div>
+          <div class="lesson" data-title="Lesson 2: Profit and loss">Lesson 2: Profit and loss</div>
+          <div class="lesson" data-title="Lesson 3: Simple interest">Lesson 3: Simple interest</div>
+        </div>
+      </div>
+      <div class="main">
+        <div class="now-playing">Now playing: <span id="lessonName">Lesson 1: Market kya hota hai</span></div>
+        <video id="player" src="sample.mp4" controls loop></video>
+        <div class="hint">
+          <b>Test kaise karein:</b> video chalte hue <b>PrintScreen</b> dabao ya <b>Snipping Tool</b> kholo &mdash;
+          ye window screenshot me milegi hi nahi, peeche ka desktop dikhega. Waisa hi OBS recording aur Zoom/Teams screen-share me bhi hoga.<br>
+          Window band karne par app pura band nahi hota &mdash; background me chalta rehta hai, taskbar / tray me koi icon nahi dikhta.
+          Wapas kholne ke liye <b>Ctrl+Shift+P</b> dabao ya exe dobara chalao. Pura band karne ke liye <b>Ctrl+Shift+Q</b>.<br>
+          <b>Floating chat:</b> Ctrl+Shift+T &mdash; <b>Screenshot + AI jawab popup:</b> kisi bhi app me Ctrl+Shift+S.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECORDER VIEW -->
+  <div class="view" id="recorderView">
+    <div class="rec-wrap">
+      <h2>&#127908; Voice Recorder</h2>
+      <div class="rec-toggles">
+        <div class="rec-toggle-row">
+          <label class="switch"><input type="checkbox" id="swScreen" checked><span class="slider"></span></label>
+          <span>Screen ki awaz</span>
+          <span class="desc">PC / class me jo baj raha hai</span>
+        </div>
+        <div class="rec-toggle-row">
+          <label class="switch"><input type="checkbox" id="swMic" checked><span class="slider"></span></label>
+          <span>Meri apni awaz (Mic)</span>
+          <span class="desc">jo tum mic me bologe</span>
+        </div>
+      </div>
+      <div class="rec-time" id="recTime">00:00</div>
+      <button class="recbtn" id="recBtn">REC</button>
+      <div class="rec-status" id="recStatus">Jo awaz record karni hai uske switch ON rakho, phir REC dabao. Recording khatm karke Save karne par file tumhare PC me save hogi.</div>
+      <div class="rec-actions">
+        <audio id="recPreview" controls style="display:none;"></audio>
+        <button class="sendbtn" id="saveRecBtn" style="display:none;">&#128190; Recording Save Karo</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT VIEW: Gemini + Groq doubt solver -->
+  <!-- SETTINGS VIEW: API keys + AI settings + ghost + resume profile — sab ek alag jagah,
+       taaki Doubt Chat ki screen bilkul saaf rahe -->
+  <div class="view" id="settingsView">
+    <div style="padding:18px; display:flex; flex-direction:column; gap:10px; overflow-y:auto;">
+      <h2 style="margin:0;">&#9881; Settings &amp; Profile</h2>
+      <p style="margin:0; opacity:0.75;">API keys, jawab ka style, Mute, Ghost typing aur tumhara Resume — sab yahan hai. Ye sab sirf ek baar set karna hai; Doubt Chat ki screen ab saaf rahegi.</p>
+    <div class="sectionTitle">&#128273; 1 — API Keys <span style="font-weight:400; opacity:.75; font-size:13px;">(ek baar save karo, hamesha chalengi — auto-delete kabhi nahi)</span></div>
+    <div id="pcardGrid" style="display:flex; flex-wrap:wrap; gap:10px; margin:8px 0;"></div>
+    <div class="keybar" id="keysStatusBar"><span id="keysStatus">&#128190; Keys ki haalat: load ho rahi hai...</span></div>
+    <div class="keybar" id="keybar">
+      <span>Gemini API key:</span>
+      <input type="password" id="apiKeyInput" placeholder="Apni free Gemini API key yahan daalo (sirf pehli baar)">
+      <button id="saveKeyBtn">Save</button>
+      <span class="ok" id="keyOk" style="display:none;">&#10003; Key saved hai</span>
+      <button class="navbtn" id="changeGeminiBtn" style="display:none;">Change</button>
+    </div>
+    <div class="keybar" id="groqKeybar">
+      <span>Groq API keys:</span>
+      <textarea id="key_groq" rows="3" placeholder="Ek line me ek Groq key (gsk_...) — 6-7 keys daal sakte ho; ek ki limit khatm ho to dusri apne aap chalegi" style="flex:1; min-width:240px;"></textarea>
+      <button id="save_groq">Save</button>
+      <span class="ok" id="ok_groq" style="display:none;">&#10003; Key saved hai</span>
+      <button class="navbtn" id="chg_groq" style="display:none;">Change</button>
+    </div>
+    <div class="keybar">
+      <span>Cerebras API keys:</span>
+      <textarea id="key_cerebras" rows="2" placeholder="Ek line me ek key — Cerebras (cloud.cerebras.ai) free tier, ultra fast" style="flex:1; min-width:240px;"></textarea>
+      <button id="save_cerebras">Save</button>
+      <span class="ok" id="ok_cerebras" style="display:none;">&#10003; Saved</span>
+      <button class="navbtn" id="chg_cerebras" style="display:none;">Change</button>
+    </div>
+    <div class="keybar">
+      <span>OpenRouter API keys:</span>
+      <textarea id="key_openrouter" rows="2" placeholder="Ek line me ek key — OpenRouter (openrouter.ai/keys) free models" style="flex:1; min-width:240px;"></textarea>
+      <button id="save_openrouter">Save</button>
+      <span class="ok" id="ok_openrouter" style="display:none;">&#10003; Saved</span>
+      <button class="navbtn" id="chg_openrouter" style="display:none;">Change</button>
+    </div>
+    <div class="keybar">
+      <span>GitHub Models key:</span>
+      <textarea id="key_github" rows="2" placeholder="GitHub token (github.com/settings/tokens) — Models free hai" style="flex:1; min-width:240px;"></textarea>
+      <button id="save_github">Save</button>
+      <span class="ok" id="ok_github" style="display:none;">&#10003; Saved</span>
+      <button class="navbtn" id="chg_github" style="display:none;">Change</button>
+    </div>
+    <div class="keybar">
+      <span>Mistral API keys:</span>
+      <textarea id="key_mistral" rows="2" placeholder="Ek line me ek key — Mistral (console.mistral.ai) free tier" style="flex:1; min-width:240px;"></textarea>
+      <button id="save_mistral">Save</button>
+      <span class="ok" id="ok_mistral" style="display:none;">&#10003; Saved</span>
+      <button class="navbtn" id="chg_mistral" style="display:none;">Change</button>
+    </div>
+    <div class="keybar">
+      <span>SambaNova API keys:</span>
+      <textarea id="key_sambanova" rows="2" placeholder="Ek line me ek key — SambaNova (cloud.sambanova.ai) fast + free credits" style="flex:1; min-width:240px;"></textarea>
+      <button id="save_sambanova">Save</button>
+      <span class="ok" id="ok_sambanova" style="display:none;">&#10003; Saved</span>
+      <button class="navbtn" id="chg_sambanova" style="display:none;">Change</button>
+    </div>
+    <div class="keybar" id="customBar">
+      <span>&#10133; Apni API jodo:</span>
+      <input type="text" id="customName" placeholder="Naam (jaise MyAPI)" style="width:120px;">
+      <input type="text" id="customBase" placeholder="Base URL (https://.../v1)" style="flex:1; min-width:170px;">
+      <input type="text" id="customModel" placeholder="Model ka naam" style="width:160px;">
+      <input type="password" id="customKey" placeholder="API key" style="width:140px;">
+      <label style="display:flex; align-items:center; gap:4px;"><input type="checkbox" id="customVision"> Photo samajhta hai</label>
+      <button id="addCustomBtn">Add karo</button>
+    </div>
+    <div id="customList"></div>
+    <div class="sectionTitle">&#129302; 2 — AI Settings <span style="font-weight:400; opacity:.75; font-size:13px;">(provider, speed, bhasha, jawab ka style)</span></div>
+    <div class="keybar" id="settingsBar">
+      <span>&#9881; <b>AI Settings</b></span>
+      <span>Jawab pehle kahan se aaye:</span>
+      <select id="providerSel">
+        <option value="groq">Groq (sabse tez)</option>
+        <option value="gemini">Gemini</option>
+        <option value="auto">Auto (Gemini pehle, phir Groq)</option>
+        <option value="race">⚡ Race (dono ek saath, jo pehle aye)</option>
+      </select>
+      <span>Jawab ki bhasha:</span>
+      <select id="langSel">
+        <option value="en">English (default)</option>
+        <option value="hinglish">Hinglish</option>
+      </select>
+      <label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" id="fastMode"> Chhote jawab — tick karne par hi jawab chhota ayega (warna Normal)</label>
+      <label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" id="turboMode"> 🚀 Ultra Speed — sabse tez model pehle + halki history (jawab super fast)</label>
+      <label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" id="debugLogMode"> &#128027; Debug log (provider health + log file)</label>
+      <span>Jhalk (theme):</span>
+      <select id="themeSel">
+        <option value="dark">Dark (default)</option>
+        <option value="light">Light</option>
+        <option value="glass">Glass (transparent look)</option>
+        <option value="system">System (auto)</option>
+      </select>
+      <span>Font size:</span>
+      <select id="fontSizeSel">
+        <option value="s">Chhota</option>
+        <option value="m">Normal</option>
+        <option value="l">Bada</option>
+      </select>
+      <span id="providerHealth" style="color:#fbbf24; font-size:12.5px;"></span>
+      <label style="display:flex; align-items:center; gap:6px;"><input type="checkbox" id="muteMode" checked> &#128263; Mute (AI koi awaz nahi karega)</label>
+    </div>
+    <div class="sectionTitle">&#128421; 3 — Floating Window <span style="font-weight:400; opacity:.75; font-size:13px;">(chhoti chat window jo har cheez ke upar rehti hai)</span></div>
+    <div class="keybar" id="floatWinBar">
+      <label><input type="checkbox" id="floatTopChk" checked> Hamesha screen ke sabse upar (Always on top)</label>
+      <span>Size:</span>
+      <button class="navbtn idxSizeBtn" data-w="340" data-h="460">S (Chhota)</button>
+      <button class="navbtn idxSizeBtn" data-w="400" data-h="560">M (Medium)</button>
+      <button class="navbtn idxSizeBtn" data-w="520" data-h="700">L (Bada)</button>
+      <button class="navbtn" id="floatOpenBtn">Floating window kholo</button>
+      <span style="flex-basis:100%; opacity:0.75;">Floating khulte hi main app hide ho jayega, floating band karte hi main app wapas dikhega. Size ki choice save rehti hai. Floating window ke andar &#9881; button se uski apni settings (Provider / Format / Speed / Window) bhi milti hain.</span>
+    </div>
+    <div class="sectionTitle">&#9000; 4 — Ghost Typing <span style="font-weight:400; opacity:.75; font-size:13px;">(jawab khud type ho jata hai)</span></div>
+    <div class="keybar" id="ghostBar">
+      <span>Ghost typing speed:</span>
+      <select id="ghostSpeed">
+        <option value="slow">Slow</option>
+        <option value="normal" selected>Normal (insaan jaisi)</option>
+        <option value="fast">Fast</option>
+        <option value="real">Real Human (sabse slow, ruk-ruk ke)</option>
+      </select>
+      <span style="display:inline-flex; align-items:center; gap:6px; margin-left:8px;">Speed slider: <input type="range" id="ghostSlider" min="10" max="90" value="34" style="width:130px;"> <span id="ghostSliderVal">34ms</span> <span style="opacity:.65; font-size:12px;">(Normal mode par lagu)</span></span>
+      <span>Har jawab ke neeche &#9000; button hai &mdash; dabane par app gayab ho jayega, tum bas sahi jagah click kar dena, typing khud hogi. Rokne ke liye Ctrl+Shift+X.</span>
+    </div>
+    <div class="sectionTitle">&#128100; 5 — Profile &amp; Custom Details <span style="font-weight:400; opacity:.75; font-size:13px;">(AI har jawab inke hisaab se dega)</span></div>
+    <div class="keybar" id="profileBar">
+      <span>&#128100; <b>Mera Profile (Resume)</b></span>
+      <span id="profileOk" style="display:none; color:#4caf7d;">&#10003; Profile save hai &mdash; AI har jawab iske hisaab se dega</span>
+      <textarea id="profileInput" rows="3" placeholder="Apna resume/profile yahan paste karo &mdash; naam, subject, kaunsi class ko padhate ho, experience, style... AI har jawab se pehle ye padhega aur usi hisaab se jawab dega. Sirf EK baar save karna hai, hamesha ke liye save rahega." style="flex:1; min-width:240px;"></textarea>
+      <button class="navbtn" id="saveProfileBtn">Save</button>
+      <button class="navbtn" id="changeProfileBtn" style="display:none;">Change</button>
+    </div>
+    <div class="keybar" id="customDetailsBar" style="flex-direction:column; align-items:stretch;">
+      <span>&#129513; <b>Custom Details (3 Box)</b> <span id="customOk" style="display:none; color:#4caf7d;">&#10003; Save hai &mdash; AI har jawab me inka dhyaan rakhega</span></span>
+      <span style="font-size:12px; opacity:.8;">Har box ko apna naam do aur usme apni details likho &mdash; jaise Box 1: "Meri Class", Box 2: "Padhane ka Style", Box 3: kuch aur. Jo box khaali chhoda, wo ignore hoga. Ek baar Save karo, hamesha save rahega.</span>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:flex-start;">
+        <input id="custLabel1" placeholder="Box 1 ka naam" style="width:170px;">
+        <textarea id="custText1" rows="2" placeholder="Box 1 ki details..." style="flex:1; min-width:240px;"></textarea>
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:flex-start;">
+        <input id="custLabel2" placeholder="Box 2 ka naam" style="width:170px;">
+        <textarea id="custText2" rows="2" placeholder="Box 2 ki details..." style="flex:1; min-width:240px;"></textarea>
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:flex-start;">
+        <input id="custLabel3" placeholder="Box 3 ka naam" style="width:170px;">
+        <textarea id="custText3" rows="2" placeholder="Box 3 ki details..." style="flex:1; min-width:240px;"></textarea>
+      </div>
+      <div><button class="navbtn" id="saveCustomBtn">Save</button></div>
+    </div>
+    <div class="sectionTitle">&#128204; Saved Jawab — Pin kiye hue (hamesha ke liye)</div>
+    <div class="keybar"><div id="pinsList" style="width:100%;"></div></div>
+    <div class="sectionTitle">&#128737; 6 — Privacy, Test, Usage &amp; Data</div>
+    <div class="keybar" id="privacyBar">
+      <span>&#128274; <b>Fallback Permission</b></span>
+      <span style="flex-basis:100%;">Jawab fail ho to AI sirf inhi approved providers par jayega. Jo tick nahi, wahan tumhara sawal kabhi chupke se nahi jayega:</span>
+      <div id="approvedList" style="display:flex; flex-wrap:wrap; gap:10px;"></div>
+    </div>
+    <div class="keybar" id="testerBar">
+      <span>&#129514; <b>Provider Test</b></span>
+      <button class="navbtn" id="testAllBtn">Sab providers test karo</button>
+      <select id="testModelSel" aria-label="Test model"></select>
+      <button class="navbtn" id="testModelBtn">Ye model test karo</button>
+      <button class="navbtn" id="exportReportBtn">Report download</button>
+      <div id="testResults" style="flex-basis:100%; font-size:13px; line-height:1.6;"></div>
+    </div>
+    <div class="keybar" id="usageBar">
+      <span>&#128202; <b>API Usage</b></span>
+      <div id="usageSummary" style="flex-basis:100%; font-size:13px; line-height:1.6;">Abhi koi usage record nahi.</div>
+      <span>Roz ki request limit (0 = koi limit nahi):</span>
+      <input type="number" id="dailyLimitInput" min="0" style="width:80px;">
+      <span>Warning kitni requests par:</span>
+      <input type="number" id="warnAtInput" min="0" style="width:80px;">
+      <button class="navbtn" id="exportUsageBtn">Usage download (CSV)</button>
+    </div>
+    <div class="keybar" id="cacheBar">
+      <span>&#128230; <b>Jawab Cache</b></span>
+      <label style="display:flex; align-items:center; gap:4px;"><input type="checkbox" id="cacheEnabledChk"> Cache ON (wahi sawal dobara puche to purana jawab turant)</label>
+      <span>Cache kitne ghante rakhe:</span>
+      <input type="number" id="cacheHoursInput" min="1" style="width:70px;">
+      <button class="navbtn" id="clearCacheBtn">Cache saaf karo</button>
+      <span style="flex-basis:100%; opacity:0.75;">Cache se aya jawab hamesha "Cache se" likh kar dikhega. Photo wale sawal cache nahi hote.</span>
+    </div>
+    <div class="keybar" id="dataBar">
+      <span>&#128190; <b>Chat Data</b></span>
+      <button class="navbtn" id="exportChatBtn">Chat download</button>
+      <button class="navbtn" id="backupBtn">Backup download</button>
+      <label class="navbtn" style="cursor:pointer;">Backup wapas lao<input type="file" id="restoreFile" accept=".json" style="display:none;"></label>
+      <button class="navbtn" id="clearSavedBtn">Save ki hui chat saaf karo</button>
+      <span>Chat kitne din save rakhe:</span>
+      <select id="retentionSel">
+        <option value="7">7 din</option>
+        <option value="30">30 din</option>
+        <option value="3650">Hamesha</option>
+      </select>
+      <span style="flex-basis:100%; opacity:0.75;">Backup me API keys NAHI hoti (wo encrypted store me hi rehti hain). Chat app band hone ke baad bhi yahi se wapas milti hai — internet ke bina bhi padh sakte ho.</span>
+    </div>
+    <div style="text-align:center; opacity:0.55; font-size:12px; padding:6px 0 2px;">Veltrix AI — Intervue AI — Version 1.3.1 (A+B)</div>
+    </div>
+  </div>
+
+  <div class="view" id="chatView">
+    <div class="offlinebar" id="offlineBar" style="display:none;">&#128244; Internet band hai — jawab ke liye net chahiye</div>
+    <div class="chatlayout">
+      <aside class="chatside" id="chatSide">
+        <button class="newchatbtn" id="sideNewChat" type="button">+ New Chat</button>
+        <div style="font-size:12px; opacity:.7;">Purani chats — click karke kholo:</div>
+        <input id="chatSearch" type="text" placeholder="\u{1F50E} Chat dhoondo...">
+        <div id="chatList"></div>
+        <div style="flex:1;"></div>
+        <button class="navbtn" id="sideThemeBtn" type="button">&#127769; Theme badlo</button>
+      </aside>
+      <div class="chatmain">
+    <div class="chathead">
+      <span class="badge" id="providerBadge">Groq</span><span id="healthDot" title="Provider health: not tested"></span><span id="chatTitleLbl" style="font-weight:600; margin-left:8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:220px;"></span><span class="tutorlbl" title="AI tumhara Tutor hai">Tutor</span><span class="linkglyph" id="linkGlyph" title="Dono windows linked hain — keys, cooldown aur cache shared hote hain">&#9679;&#9679;</span>
+      <button class="navbtn" id="listenBtnHead" title="Live Class Mode — student ka sawal suno, live jawab pao" aria-label="Live Class Mode">&#127911; Live</button>
+      <span style="flex:1;"></span>
+      <button class="navbtn" id="headClearBtn" title="Nayi chat shuru karo">&#129529; New chat</button>
+      <button class="navbtn" id="chatsBtn" title="Purani chats — har topic ki alag chat, puri memory ke saath">&#128172; Chats</button>
+      <button class="navbtn" id="optToggleBtn" title="Interview options — JD, Live Suno, Screenshot (dikhao / chhupao)">&#127919; Options</button>
+    </div>
+    <div class="chatwrap">
+      <div class="messages" id="messages">
+        <div class="msg sys">Namaste! Main tumhara AI teacher hoon. Apna doubt likho, main simple bhasha me samjha dunga.</div>
+      </div>
+      <button class="scrolldown" id="scrollDownBtn" style="display:none;" aria-label="Neeche jao">&#11015; Neeche jao</button>
+    </div>
+    <div class="attach-preview" id="attachPreview" style="display:none;">
+      <img id="attachImg" alt="screenshot">
+      <span>Screenshot ready hai &mdash; ab apna sawal likh kar <b>Bhejo</b> dabao. (Is photo me ye software khud nahi hai.)</span>
+      <button class="navbtn" id="removeAttach">Hatado</button>
+    </div>
+    <div id="rememberStrip" title="AI ko kya-kya yaad hai — dekho"><span id="rememberText">AI ki yaad: —</span><div class="rdet" id="rememberDetail"></div></div>
+    <div id="limitBar" style="display:none;"><div class="track"><div id="limitFill"></div></div><span id="limitText"></span></div>
+    <div id="dupToast" style="display:none;"></div>
+    <div id="activityLine"></div>
+    <div id="prepRow">
+        <button class="pchip" type="button" data-q="Mere resume ke hisaab se Tell me about yourself ka jawab 4-5 bolne-layak points me do.">Self Intro</button>
+        <button class="pchip" type="button" data-q="Meri strengths ko mere resume ke asal kaam se jodkar 3 bolne-layak points me do.">Strengths</button>
+        <button class="pchip" type="button" data-q="Ek weakness aise bolo jo asal bhi lage aur interview me nuksaan bhi na kare - 2 points me, saath me main use kaise sudhaar raha hoon.">Weakness</button>
+        <button class="pchip" type="button" data-q="Is JD ke hisaab se Why this company ka jawab 3 points me do.">Why this company</button>
+        <button class="pchip" type="button" data-q="Salary expectation par sawal aaye to diplomatically kaise jawab dun - 2-3 bolne-layak points do, koi pakki rakam mat do.">Salary wale sawal</button>
+        <button class="pchip" type="button" data-q="Is JD ke hisaab se interview ke aakhir me unse poochne ke liye 3 smart sawal do.">Unse poochne wale sawal</button>
+        <button class="pchip" type="button" data-q="Is pure session ke sawal-jawab ka ek chhota summary bana do - kya poochha gaya aur maine kya jawab diya, points me.">Session Summary</button>
+    </div>
+    <div id="chipsRow">
+      <button class="chip" type="button" data-q="Isi jawab ko aur aasan bhasha me samjhao, jaise ek beginner ko samjha rahe ho.">&#128161; Samjhao</button>
+      <button class="chip" type="button" data-q="Isi topic par ek aasan sa, roz-marra ka example do.">&#9999;&#65039; Example</button>
+      <button class="chip" type="button" data-q="Isi jawab ko bahut short me, sirf main points me batao.">&#9889; Short</button>
+      <button class="chip" type="button" data-q="Isi topic ke short notes bana do &#8212; chhote headings aur saaf points me.">&#128221; Notes</button>
+      <button class="chip" type="button" data-q="Isi topic par 3 chhote quiz sawal poochho, jawab abhi mat do.">&#10067; Quiz</button>
+    </div>
+    <div class="chat-input">
+      <button class="navbtn" id="shotBtn" title="Poori screen ka screenshot lo" aria-label="Screenshot lo">&#128247; Screenshot</button>
+      <button class="navbtn" id="listenBtn" title="Live Class Mode — student ka sawal live translate + live jawab" aria-label="Live Class Mode">&#127911; Suno</button>
+      <button class="navbtn" id="micBtn" title="Bol kar doubt puchho" aria-label="Bol kar doubt puchho">&#127908; Bol</button>
+      <textarea id="chatText" rows="1" placeholder="Apna sawal likho..." aria-label="Apna sawal likho"></textarea>
+      <button class="navbtn" id="ghostLastBtn" type="button" title="Pichhla jawab ghost type karo">&#9000; Type</button>
+      <select id="providerQuick" aria-label="Provider switch" title="Provider / model switch"></select>
+      <button class="navbtn" id="langPill" type="button" title="Jawab ki bhasha badlo">EN</button>
+      <button class="sendbtn" id="sendBtn" aria-label="Bhejo">Bhejo</button>
+      <button class="navbtn" id="clearBtn" title="Poori chat saaf karo — nayi shuruaat" aria-label="Chat saaf karo">&#129529; Clear</button>
+    </div>
+      </div>
+      <aside id="optPanel"><div id="optDrag" title="Drag karke panel chauda/patla karo"></div><div class="optHead"><b>&#127919; Interview Options</b><span style="flex:1;"></span><button class="navbtn" id="optHideBtn" type="button">&raquo; Chhupao</button></div>
+    <div id="ivPanel">
+      <div class="ivHead"><b>&#127919; Interview Mode</b><span class="ivState">ON - jawab first-person, bolne-layak points me, Race mode (sabse tez)</span><span style="flex:1;"></span><button class="navbtn" id="ivLiveBtn">&#127911; Live Suno</button><button class="navbtn" id="ivShotBtn">&#128247; Screenshot</button></div>
+      <div class="ivRow"><span id="ivResumeState">Resume: -</span><textarea id="jdText" rows="2" placeholder="Yahan Job Description (JD) paste karo - jawab isi role ke hisaab se ayenge. Ek baar paste karna hai, save apne aap ho jayega."></textarea></div>
+      <div class="ivRow"><span style="font-size:12.5px; padding-top:6px;">JD slots:</span><button class="navbtn" type="button" data-jdslot="1">JD 1</button><button class="navbtn" type="button" data-jdslot="2">JD 2</button><button class="navbtn" type="button" data-jdslot="3">JD 3</button><span style="font-size:12px; opacity:.7;">(button dabane se wo JD load; JD box badalte hi usi slot me save)</span></div>
+      <div class="ivRow"><textarea id="ivNotes" rows="2" placeholder="Apne khaas points yahan likho - salary expectation, yaad rakhne wali baatein... (apne aap save ho jata hai)"></textarea></div>
+      <div class="ivRow">
+        <button class="chip" type="button" data-q="Isi jawab ko aur short aur bolne-layak bana do - sirf 2-3 points.">&#128483; Short bolo</button>
+        <button class="chip" type="button" data-q="Isi jawab ko aur confident aur professional andaaz me bolo, first person me.">&#128170; Confident</button>
+        <button class="chip" type="button" data-q="Isi jawab ke saath ek chhota sa asal example bhi jod do jo main bol sakun.">&#9999;&#65039; Example jodo</button>
+        <button class="chip" type="button" data-q="Isi jawab ko aur simple, easy English me bolo - chhote chhote sentences me.">Simple English</button>
+      </div>
+    </div>
+      </aside>
+    </div>
+  </div>
+
+<script src="ai-engine.js"></script>
+<script>
+  // ---------- View switching ----------
+  const views = { home: document.getElementById('homeView'), classes: document.getElementById('classesView'), chat: document.getElementById('chatView'), recorder: document.getElementById('recorderView'), settings: document.getElementById('settingsView') };
+  const navBtns = { settings: document.getElementById('navSettings') };
+  function show(view) {
+    Object.keys(views).forEach((k) => views[k].classList.toggle('active', k === view));
+    Object.keys(navBtns).forEach((k) => navBtns[k].classList.toggle('active', k === view));
+    const niBtn = document.getElementById('navInterview'); if (niBtn) niBtn.classList.toggle('active', view === 'chat');
+    if (view !== 'classes') { const v = document.getElementById('player'); if (v) v.pause(); }
+  }
+  const winMinBtn = document.getElementById('winMin');
+  if (winMinBtn && window.api.winMin) winMinBtn.addEventListener('click', () => window.api.winMin());
+  const winMaxBtn = document.getElementById('winMax');
+  if (winMaxBtn && window.api.winMax) winMaxBtn.addEventListener('click', () => window.api.winMax());
+  const winCloseBtn = document.getElementById('winClose');
+  if (winCloseBtn && window.api.winClose) winCloseBtn.addEventListener('click', () => window.api.winClose());
+  navBtns.settings.addEventListener('click', () => show('settings'));
+  document.getElementById('navFloat').addEventListener('click', () => window.api.openFloat());
+  show('chat');
+
+  // ---------- Classes: dummy lesson switching (Phase-1 model) ----------
+  const lessons = document.querySelectorAll('.lesson');
+  const player = document.getElementById('player');
+  const lessonName = document.getElementById('lessonName');
+  lessons.forEach((item) => {
+    item.addEventListener('click', () => {
+      lessons.forEach((l) => l.classList.remove('active'));
+      item.classList.add('active');
+      lessonName.textContent = item.dataset.title;
+      player.currentTime = 0;
+      player.play();
+    });
+  });
+
+  // ---------- AI doubt chat (Gemini + Groq, dono free) ----------
+  const keyInput = document.getElementById('apiKeyInput');
+  const keyOk = document.getElementById('keyOk');
+  const messagesEl = document.getElementById('messages');
+  const chatText = document.getElementById('chatText');
+  const sendBtn = document.getElementById('sendBtn');
+  let convo = []; // {who:'user'|'ai', text} — dono providers ke liye common history
+
+  // ---------- Settings (provider order + fast mode + mute) ----------
+  // Mute default ON hai: AI bilkul silent rahega, class me awaz kabhi nahi jayegi.
+  let settings = { provider: 'race', fast: false, muted: true, lang: 'en', turbo: false, debugLog: false, theme: 'dark', fontSize: 'm', approved: null, cacheEnabled: false, cacheHours: 24, dailyLimit: 0, warnAt: 0, retentionDays: 30, interviewMode: true, ivLen: 'normal', interviewJd: '', fmtMode: 'auto', fmtManual: 'normal', floatTop: true, floatSize: null };
+  try { const s = JSON.parse(localStorage.getItem('ai_settings') || 'null'); if (s) settings = Object.assign(settings, s); } catch (e) { /* ignore */ }
+  // Default jawab NORMAL hai — chhota jawab sirf tab, jab user khud Chhote-jawab tick kare.
+  // Purane versions me fast default ON tha; use ek baar normal par reset kar do.
+  if (!localStorage.getItem('fast_default_fixed')) {
+    settings.fast = false;
+    try {
+      localStorage.setItem('fast_default_fixed', '1');
+      localStorage.setItem('ai_settings', JSON.stringify(settings));
+    } catch (e) { /* ignore */ }
+  }
+  const providerSel = document.getElementById('providerSel');
+  const fastModeEl = document.getElementById('fastMode');
+  const muteEl = document.getElementById('muteMode');
+  const langSel = document.getElementById('langSel');
+  const turboEl = document.getElementById('turboMode');
+  const debugEl = document.getElementById('debugLogMode');
+  const themeSel = document.getElementById('themeSel');
+  function applyTheme() { const t = settings.theme === 'system' ? ((window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark') : settings.theme; document.documentElement.dataset.theme = (t === 'light' || t === 'glass') ? t : 'dark'; }
+  function updateBadge() {
+    const badge = document.getElementById('providerBadge');
+    if (!badge || !providerSel) return;
+    const sel = providerSel.options[providerSel.selectedIndex];
+    const SHORTP = { groq: 'Groq', cerebras: 'Cerebras', gemini: 'Gemini', openrouter: 'OpenRouter', github: 'GitHub', mistral: 'Mistral', sambanova: 'SambaNova', auto: 'Auto', race: '\u26a1 Race' };
+    const bv = sel ? sel.value : settings.provider;
+    badge.textContent = SHORTP[bv] || (bv && bv.indexOf('custom:') === 0 ? bv.slice(7) : (bv || 'AI'));
+  }
+  if (providerSel) providerSel.value = settings.provider;
+  if (fastModeEl) fastModeEl.checked = !!settings.fast;
+  if (muteEl) muteEl.checked = settings.muted !== false;
+  if (langSel) langSel.value = settings.lang || 'en';
+  if (turboEl) turboEl.checked = !!settings.turbo;
+  if (debugEl) debugEl.checked = !!settings.debugLog;
+  if (themeSel) themeSel.value = settings.theme || 'dark';
+  applyTheme();
+  function applyMuteUI() {
+    document.querySelectorAll('.spk-voice').forEach((b) => { b.style.display = settings.muted !== false ? 'none' : ''; });
+  }
+  function saveSettings() {
+    if (providerSel) settings.provider = providerSel.value;
+    if (fastModeEl) settings.fast = fastModeEl.checked;
+    if (muteEl) settings.muted = muteEl.checked;
+    if (langSel) settings.lang = langSel.value;
+    if (turboEl) settings.turbo = turboEl.checked;
+    if (debugEl) settings.debugLog = debugEl.checked;
+    if (themeSel) settings.theme = themeSel.value;
+    applyTheme();
+    updateBadge();
+    if (settings.muted !== false) { try { speechSynthesis.cancel(); } catch (e) { /* ignore */ } }
+    applyMuteUI();
+    localStorage.setItem('ai_settings', JSON.stringify(settings));
+    if (window.api && window.api.syncKeys) window.api.syncKeys({ settings: settings });
+  }
+  if (providerSel) providerSel.addEventListener('change', saveSettings);
+  if (fastModeEl) fastModeEl.addEventListener('change', saveSettings);
+  if (muteEl) muteEl.addEventListener('change', saveSettings);
+  if (langSel) langSel.addEventListener('change', saveSettings);
+  if (turboEl) turboEl.addEventListener('change', saveSettings);
+  if (debugEl) debugEl.addEventListener('change', saveSettings);
+  if (themeSel) themeSel.addEventListener('change', saveSettings);
+  const providerQuick = document.getElementById('providerQuick');
+  if (providerQuick) providerQuick.addEventListener('change', () => {
+    if (providerQuick.value.indexOf(':') >= 0) return;
+    settings.provider = providerQuick.value;
+    if (providerSel) providerSel.value = providerQuick.value;
+    saveSettings();
+  });
+  // Window chhupte hi koi bhi chalti awaz turant band.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { try { speechSynthesis.cancel(); } catch (e) { /* ignore */ } }
+  });
+
+  // ---------- API Providers: sab fast + free wale, ek hi system me ----------
+  // Keys ab main process ke ENCRYPTED store me rehti hain (safeStorage).
+  // Yahan sirf memory-cache hai; disk par plain key kabhi nahi jati.
+  let keyCache = { gemini: '', providers: {}, customs: [] };
+  // v3.0: shared engine (ai-engine.js) ke liye is page ke adapters.
+  aiConfigure({
+    profileText: () => { try { return localStorage.getItem('my_profile') || ''; } catch (e) { return ''; } },
+    customText: () => { try { return localStorage.getItem('my_custom_boxes') || ''; } catch (e) { return ''; } },
+    getCustoms: () => keyCache.customs,
+    getProviders: () => keyCache.providers,
+    getGroqKeyStr: () => keyCache.providers.groq || '',
+    pushShared: (st) => { try { if (window.api && window.api.syncKeys) window.api.syncKeys(st); const lg = document.getElementById('linkGlyph'); if (lg) { lg.classList.add('pulse'); setTimeout(() => lg.classList.remove('pulse'), 700); } } catch (e) { /* ignore */ } },
+    pullShared: async () => { try { return await window.api.getKeys(); } catch (e) { return null; } }
+  });
+  function providerKeys() { return keyCache.providers; }
+  // Groq key hamesha taaza store se bhi pakdo — cache purana ho to bhi Live/Bol mode galat 'key chahiye' na bole
+  async function freshGroqKey() {
+    if (providerKeys().groq) return providerKeys().groq;
+    try {
+      const store = await window.api.getKeys();
+      if (store && store.providers) { const p = JSON.parse(store.providers || '{}'); if (p && p.groq) { keyCache.providers = p; return p.groq; } }
+    } catch (e) { /* ignore */ }
+    return '';
+  }
+  function saveProviderKeys(p) { keyCache.providers = p; persistKeys(); }
+  function customProviders() { return keyCache.customs; }
+  function saveCustomProviders(list) { keyCache.customs = list; persistKeys(); }
+  let keysLoaded = false; // store se keys load hone se pehle persistKeys KABHI nahi chalega (khaali cache se wipe rokne ke liye)
+  let keysStorePath = ''; // keys.json kahan hai — Settings me proof ke liye dikhate hain
+  function updateKeysStatus() {
+    const el = document.getElementById('keysStatus');
+    if (!el) return;
+    const parts = [];
+    if (keyCache.gemini) parts.push('Gemini ✓');
+    const p = keyCache.providers || {};
+    Object.keys(p).forEach((pid) => { const n = keyCount(p[pid]); if (n > 0) parts.push(pid + ' ✓ (' + n + ')'); });
+    if (keyCache.customs && keyCache.customs.length) parts.push('Custom API ✓ (' + keyCache.customs.length + ')');
+    el.textContent = parts.length
+      ? '💾 Keys disk par SAVE hain: ' + parts.join(' • ') + ' — app band karke dobara kholne par bhi yahi rahengi.' + (keysStorePath ? ' (File: ' + keysStorePath + '\\keys.json + ek backup file)' : '')
+      : '💾 Abhi koi key save nahi hai — key daal kar Save dabao, phir wo hamesha ke liye disk par save ho jayegi (do jagah: main file + backup file).';
+  }
+  function persistKeys() {
+    if (!keysLoaded) return;
+    // DOUBLE-STORE: dusri backup file — main store kabhi khaali mile to yahin se keys wapas aa jayengi
+    try { localStorage.setItem('scp_keys_backup_v1', JSON.stringify({ gemini: keyCache.gemini || '', providers: keyCache.providers || {}, customs: keyCache.customs || [] })); } catch (e) { /* ignore */ }
+    if (window.api && window.api.setKeys) {
+      window.api.setKeys({ gemini: keyCache.gemini || '', providers: JSON.stringify(keyCache.providers), customs: JSON.stringify(keyCache.customs) });
+    }
+    updateKeysStatus();
+  }
+  function makeKeyBag() {
+    return { gemini: keyCache.gemini, providers: keyCache.providers, customs: keyCache.customs };
+  }
+  function refreshProviderOptions() {
+    if (!providerSel) return;
+    const cur = settings.provider;
+    providerSel.innerHTML = '';
+    const add = (v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; providerSel.appendChild(o); };
+    add('groq', 'Groq (sabse tez)');
+    add('cerebras', 'Cerebras (ultra fast)');
+    add('gemini', 'Gemini');
+    add('openrouter', 'OpenRouter (free models)');
+    add('github', 'GitHub Models');
+    add('mistral', 'Mistral');
+    add('sambanova', 'SambaNova');
+    customProviders().forEach((c) => add('custom:' + c.name, '➕ ' + c.name));
+    add('auto', 'Auto');
+    add('race', '⚡ Race');
+    providerSel.value = cur;
+    if (providerSel.value !== cur) { providerSel.value = 'groq'; settings.provider = 'groq'; }
+    const quick = document.getElementById('providerQuick');
+    if (quick) { quick.innerHTML = providerSel.innerHTML; quick.value = settings.provider; }
+    updateBadge();
+  }
+  function syncAll() {
+    if (window.api && window.api.syncKeys) {
+      window.api.syncKeys({ settings: settings, profile: localStorage.getItem('my_profile') || '', customBoxes: localStorage.getItem('my_custom_boxes') || '' });
+    }
+  }
+  function renderCustomList() {
+    const box = document.getElementById('customList');
+    if (!box) return;
+    box.innerHTML = '';
+    customProviders().forEach((c, i) => {
+      const row = document.createElement('div');
+      row.className = 'keybar';
+      const s = document.createElement('span');
+      s.textContent = '➕ ' + c.name + ' — ' + c.model + (c.vision ? ' (photo ✓)' : '');
+      const del = document.createElement('button');
+      del.className = 'navbtn';
+      del.textContent = 'Hatado';
+      del.addEventListener('click', () => {
+        const list = customProviders();
+        list.splice(i, 1);
+        saveCustomProviders(list);
+        refreshKeyUI();
+        addMsg('sys', c.name + ' hata diya.');
+      });
+      row.appendChild(s);
+      row.appendChild(del);
+      box.appendChild(row);
+    });
+  }
+  function refreshKeyUI() {
+    const has = !!keyCache.gemini;
+    keyOk.style.display = has ? 'inline' : 'none';
+    keyInput.style.display = has ? 'none' : 'block';
+    document.getElementById('saveKeyBtn').style.display = has ? 'none' : 'block';
+    document.getElementById('changeGeminiBtn').style.display = has ? 'inline-block' : 'none';
+    const p = providerKeys();
+    Object.keys(PROVIDERS).forEach((pid) => {
+      const n = keyCount(p[pid]);
+      const hasK = n > 0;
+      const ta = document.getElementById('key_' + pid);
+      const ok = document.getElementById('ok_' + pid);
+      const sv = document.getElementById('save_' + pid);
+      const ch = document.getElementById('chg_' + pid);
+      if (ok) { ok.style.display = hasK ? 'inline' : 'none'; if (hasK) ok.textContent = '✓ ' + n + ' key saved'; }
+      if (ta) ta.style.display = hasK ? 'none' : 'block';
+      if (sv) sv.style.display = hasK ? 'none' : 'block';
+      if (ch) ch.style.display = hasK ? 'inline-block' : 'none';
+    });
+    renderCustomList();
+    refreshProviderOptions();
+    syncAll();
+  }
+  document.getElementById('changeGeminiBtn').addEventListener('click', () => {
+    keyInput.value = '';
+    keyInput.style.display = 'block';
+    document.getElementById('saveKeyBtn').style.display = 'block';
+    keyOk.style.display = 'none';
+    document.getElementById('changeGeminiBtn').style.display = 'none';
+    keyInput.focus();
+  });
+  document.getElementById('saveKeyBtn').addEventListener('click', () => {
+    const k = keyInput.value.trim();
+    if (k) { keyCache.gemini = k; persistKeys(); refreshKeyUI(); addMsg('sys', 'Gemini API key save ho gayi. Ab apna doubt puchho!'); }
+  });
+  Object.keys(PROVIDERS).forEach((pid) => {
+    const sv = document.getElementById('save_' + pid);
+    if (sv) sv.addEventListener('click', () => {
+      const ta = document.getElementById('key_' + pid);
+      const v = (ta.value || '').trim();
+      if (!v) return;
+      const p = providerKeys();
+      p[pid] = v;
+      saveProviderKeys(p);
+      refreshKeyUI();
+      addMsg('sys', PROVIDERS[pid].name + ' ki ' + keyCount(v) + ' key save ho gayi.');
+    });
+    const ch = document.getElementById('chg_' + pid);
+    if (ch) ch.addEventListener('click', () => {
+      const ta = document.getElementById('key_' + pid);
+      ta.value = providerKeys()[pid] || '';
+      ta.style.display = 'block';
+      document.getElementById('save_' + pid).style.display = 'block';
+      document.getElementById('ok_' + pid).style.display = 'none';
+      ch.style.display = 'none';
+      ta.focus();
+    });
+  });
+  const addCustomBtn = document.getElementById('addCustomBtn');
+  if (addCustomBtn) addCustomBtn.addEventListener('click', () => {
+    const name = document.getElementById('customName').value.trim();
+    const base = document.getElementById('customBase').value.trim().replace(/\/$/, '');
+    const model = document.getElementById('customModel').value.trim();
+    const key = document.getElementById('customKey').value.trim();
+    const vision = document.getElementById('customVision').checked;
+    if (!name || !base || !model || !key) { addMsg('sys', 'Custom API ke liye Naam, Base URL, Model aur Key — chaaro chahiye.'); return; }
+    const list = customProviders().filter((c) => c.name !== name);
+    list.push({ name: name, base: base, model: model, key: key, vision: vision });
+    saveCustomProviders(list);
+    document.getElementById('customName').value = '';
+    document.getElementById('customBase').value = '';
+    document.getElementById('customModel').value = '';
+    document.getElementById('customKey').value = '';
+    document.getElementById('customVision').checked = false;
+    refreshKeyUI();
+    addMsg('sys', name + ' API jud gayi. Upar "Jawab pehle kahan se aaye" me use pehla bhi bana sakte ho.');
+  });
+
+  // Encrypted store se keys load karo; purane localStorage wale ek baar migrate.
+  async function initKeys() {
+    try {
+      const store = await window.api.getKeys();
+      if (store) {
+        if (store.__userDataPath) keysStorePath = store.__userDataPath;
+        if (typeof store.pins === 'string' && store.pins) { try { pinsList = JSON.parse(store.pins) || []; } catch (e) { /* ignore */ } renderPins(); }
+        if (store.gemini) keyCache.gemini = store.gemini;
+        if (store.providers) { try { keyCache.providers = JSON.parse(store.providers) || {}; } catch (e) { /* ignore */ } }
+        if (store.customs) { try { keyCache.customs = JSON.parse(store.customs) || []; } catch (e) { /* ignore */ } }
+        if (store.__encryptionAvailable === false) {
+          setTimeout(() => addMsg('sys', '⚠ Is PC par key-encryption (safeStorage) uplabdh NAHI hai — tumhari API keys is computer par bina encryption ke save ho rahi hain. Kisi aur ko is PC ka access mat do.'), 800);
+        }
+        if (store.__decryptFailed && store.__decryptFailed.length) {
+          setTimeout(() => addMsg('sys', '⚠ Kuch saved keys is PC par decrypt nahi ho payin — ghabrana mat, wo DELETE nahi hui hain, unka encrypted data surakshit hai. Bas wahi key Settings me ek baar phir daal kar Save kar do, nayi encryption ke saath save ho jayegi aur hamesha chalegi.'), 900);
+        }
+      }
+    } catch (e) { /* ignore */ }
+    keysLoaded = true;
+    if (!keyCache.gemini && localStorage.getItem('gemini_key')) keyCache.gemini = localStorage.getItem('gemini_key');
+    if (!keyCount(keyCache.providers.groq) && localStorage.getItem('groq_key')) keyCache.providers.groq = localStorage.getItem('groq_key');
+    // DOUBLE-STORE auto-heal: main store me koi key khaali ho lekin backup file me ho, to wapas bhar do
+    let restoredFromBackup = false;
+    try {
+      const bak = JSON.parse(localStorage.getItem('scp_keys_backup_v1') || 'null');
+      if (bak) {
+        if (!keyCache.gemini && bak.gemini) { keyCache.gemini = bak.gemini; restoredFromBackup = true; }
+        const bp = bak.providers || {};
+        Object.keys(bp).forEach((pid) => { if (!keyCount(keyCache.providers[pid]) && keyCount(bp[pid])) { keyCache.providers[pid] = bp[pid]; restoredFromBackup = true; } });
+        if ((!keyCache.customs || !keyCache.customs.length) && Array.isArray(bak.customs) && bak.customs.length) { keyCache.customs = bak.customs; restoredFromBackup = true; }
+      }
+    } catch (e) { /* ignore */ }
+    if (restoredFromBackup) setTimeout(() => showToast('💾 Ek provider key backup se wapas mil gayi aur dobara save ho gayi hai.', 6000), 700);
+    persistKeys();
+    localStorage.removeItem('gemini_key');
+    localStorage.removeItem('groq_key');
+    localStorage.removeItem('provider_keys');
+    localStorage.removeItem('custom_providers');
+    refreshKeyUI();
+    setTimeout(warmUp, 1500);
+  }
+  initKeys();
+
+  // ---------- Mera Profile (Resume): ek baar save, AI har jawab iske hisaab se dega ----------
+  const profileInput = document.getElementById('profileInput');
+  const profileOk = document.getElementById('profileOk');
+  function refreshProfileUI() {
+    const has = !!(localStorage.getItem('my_profile') || '').trim();
+    profileOk.style.display = has ? 'inline' : 'none';
+    profileInput.style.display = has ? 'none' : 'block';
+    document.getElementById('saveProfileBtn').style.display = has ? 'none' : 'block';
+    document.getElementById('changeProfileBtn').style.display = has ? 'inline-block' : 'none';
+    if (window.api && window.api.syncKeys) window.api.syncKeys({ profile: localStorage.getItem('my_profile') || '' });
+  }
+  document.getElementById('saveProfileBtn').addEventListener('click', () => {
+    const v = profileInput.value.trim().slice(0, 4000);
+    if (v) { localStorage.setItem('my_profile', v); refreshProfileUI(); addMsg('sys', 'Profile save ho gaya. Ab se AI har jawab tumhari profile ke hisaab se dega.'); }
+  });
+  document.getElementById('changeProfileBtn').addEventListener('click', () => {
+    profileInput.value = localStorage.getItem('my_profile') || '';
+    profileInput.style.display = 'block';
+    document.getElementById('saveProfileBtn').style.display = 'block';
+    profileOk.style.display = 'none';
+    document.getElementById('changeProfileBtn').style.display = 'none';
+    profileInput.focus();
+  });
+  refreshProfileUI();
+
+  // ---------- Custom Details (3 box): har box ka apna naam + details; AI har jawab me dhyaan rakhega ----------
+  function loadCustomBoxes() {
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem('my_custom_boxes') || '[]'); } catch (e) { arr = []; }
+    if (!Array.isArray(arr)) arr = [];
+    for (let i = 0; i < 3; i++) {
+      const b = arr[i] || {};
+      const li = document.getElementById('custLabel' + (i + 1));
+      const ti = document.getElementById('custText' + (i + 1));
+      if (li) li.value = b.label || '';
+      if (ti) ti.value = b.text || '';
+    }
+    const has = arr.some((b) => b && String(b.text || '').trim());
+    document.getElementById('customOk').style.display = has ? 'inline' : 'none';
+  }
+  document.getElementById('saveCustomBtn').addEventListener('click', () => {
+    const arr = [];
+    for (let i = 0; i < 3; i++) {
+      arr.push({
+        label: document.getElementById('custLabel' + (i + 1)).value.trim().slice(0, 60),
+        text: document.getElementById('custText' + (i + 1)).value.trim().slice(0, 2000)
+      });
+    }
+    localStorage.setItem('my_custom_boxes', JSON.stringify(arr));
+    if (window.api && window.api.syncKeys) window.api.syncKeys({ customBoxes: JSON.stringify(arr) });
+    loadCustomBoxes();
+    addMsg('sys', 'Custom details save ho gayi. Ab se AI har jawab me inka dhyaan rakhega.');
+  });
+  loadCustomBoxes();
+
+  // ---------- Format Mode: Auto (sawal ke hisaab se) / Manual (fix format) ----------
+  function refreshFmtUI() {
+    const ftc = document.getElementById('floatTopChk');
+    if (ftc) ftc.checked = settings.floatTop !== false;
+  }
+  function saveFmtSettings() {
+    try { localStorage.setItem('ai_settings', JSON.stringify(settings)); } catch (e) { /* ignore */ }
+    syncAll();
+  }
+  const floatTopChk = document.getElementById('floatTopChk');
+  if (floatTopChk) floatTopChk.addEventListener('change', () => { settings.floatTop = floatTopChk.checked; saveFmtSettings(); if (window.api && window.api.setFloatTop) window.api.setFloatTop(settings.floatTop !== false); });
+  document.querySelectorAll('.idxSizeBtn').forEach((b) => b.addEventListener('click', () => { const w = Number(b.getAttribute('data-w')) || 400; const h = Number(b.getAttribute('data-h')) || 560; settings.floatSize = { w: w, h: h }; saveFmtSettings(); if (window.api && window.api.setFloatSize) window.api.setFloatSize(w, h); }));
+  const floatOpenBtn = document.getElementById('floatOpenBtn');
+  if (floatOpenBtn) floatOpenBtn.addEventListener('click', () => { if (window.api && window.api.openFloat) window.api.openFloat(); });
+  refreshFmtUI();
+
+  function speakText(text) {
+    if (settings.muted !== false) return; // Mute ON = AI bilkul silent, awaz kabhi nahi
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const voices = speechSynthesis.getVoices();
+      const v = voices.find((x) => /hi[-_]/i.test(x.lang)) || voices.find((x) => /en[-_]IN/i.test(x.lang));
+      if (v) u.voice = v;
+      u.rate = 1.0;
+      speechSynthesis.speak(u);
+    } catch (e) { /* ignore */ }
+  }
+
+  // ---------- Ghost typing ----------
+  const ghostSpeedSel = document.getElementById('ghostSpeed');
+  if (ghostSpeedSel) {
+    ghostSpeedSel.value = localStorage.getItem('ghost_speed') || 'normal';
+    ghostSpeedSel.addEventListener('change', () => localStorage.setItem('ghost_speed', ghostSpeedSel.value));
+  }
+  function ghostProfile() {
+    const v = ghostSpeedSel ? ghostSpeedSel.value : (localStorage.getItem('ghost_speed') || 'normal');
+    if (v === 'slow') return { delay: 70, mode: 'slow' };
+    if (v === 'fast') return { delay: 14, mode: 'fast' };
+    if (v === 'real') return { delay: 90, mode: 'real' };
+    const cd = Number(localStorage.getItem('ghost_custom_delay') || 0); if (cd >= 10 && cd <= 90) return { delay: cd, mode: 'normal' };
+    return { delay: 34, mode: 'normal' };
+  }
+  function startGhostType(text, opts) {
+    if (!text || text === 'Soch raha hoon...') return;
+    addMsg('sys', 'Ghost typing: 3 second me typing shuru hogi - jahan type karwana hai, wahan abhi click kar do. Pause/resume: mouse ka middle click (scroll wala). Poora rokne ke liye Ctrl+Shift+X.');
+    const p = ghostProfile();
+    const isCode = !!(opts && opts.code);
+    setTimeout(() => { window.api.ghostType(text, isCode ? 32 : p.delay, isCode ? 'normal' : p.mode, isCode); }, 3000);
+  }
+  function startGhostPaste(text) {
+    if (!text) return;
+    addMsg('sys', 'Ghost paste: 3 second me code wahan chipak jayega jahan tum click karoge — perfect format ke saath, ek bhi space galat nahi. Jahan paste karna hai, wahan click kar do.');
+    setTimeout(() => { if (window.api.ghostPaste) window.api.ghostPaste(text); }, 3000);
+  }
+
+  // ---------- Chat UI helpers: scroll, markdown, math ----------
+  let stickBottom = true;
+  let rafPending = false;
+  const scrollDownBtn = document.getElementById('scrollDownBtn');
+  function scrollChat(force) {
+    if (force || stickBottom) {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      if (scrollDownBtn) scrollDownBtn.style.display = 'none';
+    }
+  }
+  function queueScroll() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      scrollChat(false);
+      if (!stickBottom && scrollDownBtn) scrollDownBtn.style.display = 'block';
+    });
+  }
+  if (scrollDownBtn) scrollDownBtn.addEventListener('click', () => { stickBottom = true; scrollChat(true); });
+  messagesEl.addEventListener('scroll', () => {
+    const near = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 60;
+    stickBottom = near;
+    if (scrollDownBtn) scrollDownBtn.style.display = near ? 'none' : 'block';
+  });
+  const offlineBar = document.getElementById('offlineBar');
+  function refreshOnline() { if (offlineBar) offlineBar.style.display = navigator.onLine ? 'none' : 'block'; }
+  window.addEventListener('online', refreshOnline);
+  window.addEventListener('offline', refreshOnline);
+  refreshOnline();
+  messagesEl.addEventListener('click', (e) => {
+    const ebtn = e.target && e.target.closest ? e.target.closest('.expandcode') : null;
+    if (ebtn) { const blk = ebtn.closest('.codeblock'); const code = blk ? blk.querySelector('code') : null; if (code) showCodeOverlay(code.textContent); return; }
+    const wbtn = e.target && e.target.closest ? e.target.closest('.wrapcode') : null;
+    if (wbtn) { const blk = wbtn.closest('.codeblock'); if (blk) blk.classList.toggle('codewrap'); return; }
+    const btn = e.target && e.target.closest ? e.target.closest('.copycode') : null;
+    const gbtn = e.target && e.target.closest ? e.target.closest('.ghostcode') : null;
+    const pbtn = e.target && e.target.closest ? e.target.closest('.pastecode') : null;
+    if (!btn && !gbtn && !pbtn) return;
+    const block = (btn || gbtn || pbtn).closest('.codeblock');
+    const code = block ? block.querySelector('code') : null;
+    if (!code) return;
+    if (pbtn) { startGhostPaste(code.textContent); return; }
+    if (gbtn) { startGhostType(code.textContent, { code: true }); return; }
+    try { navigator.clipboard.writeText(code.textContent); btn.textContent = '✓ Copied'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); } catch (err) { /* ignore */ }
+  });
+  function pruneMessages() {
+    while (messagesEl.children.length > 120) messagesEl.removeChild(messagesEl.firstElementChild);
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function highlightCode(escaped) {
+    return escaped
+      .replace(/(&quot;[^&\n]*?&quot;|&#39;[^&\n]*?&#39;|'[^'\n]*')/g, '<span class="tok-str">$1</span>')
+      .replace(/\b(const|let|var|function|return|if|else|for|while|class|new|await|async|import|from|def|print|true|false|null|None|True|False)\b/g, '<span class="tok-kw">$1</span>')
+      .replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="tok-num">$1</span>')
+      .replace(/(\/\/[^\n]*)/g, '<span class="tok-com">$1</span>');
+  }
+  // Kuch models kabhi code ko ek hi line me daba kar bhej dete hain — Python ke liye
+  // wo code chal hi nahi sakta. Ye halki repair use alag lines + indentation
+  // me badal deti hai. Sirf tab chalti hai jab code ek hi line me aya ho.
+  function repairOneLineCode(code, lang) {
+    const l = String(lang || '').toLowerCase();
+    if (l !== 'python' && l !== 'py') return code;
+    const flat = String(code).trim();
+    if (flat.indexOf('\n') >= 0 || flat.length < 40) return code;
+    const KW = /^(def |class |for |if |elif |while |return |print\(|import |from |with |except|finally|break|continue|pass\b)/;
+    const lines = [];
+    let cur = '';
+    let q = null;
+    let paren = 0;
+    const push = () => { const t = cur.trim(); if (t) lines.push(t); cur = ''; };
+    for (let i = 0; i < flat.length; i++) {
+      const ch = flat[i];
+      if (q) { cur += ch; if (ch === q) q = null; continue; }
+      if (ch === '"' || ch === "'") { q = ch; cur += ch; continue; }
+      if (ch === '(') paren++;
+      if (ch === ')') paren--;
+      if (ch === ':' && flat[i + 1] === ' ' && paren === 0 && /^(def\b|class\b|for\b|if\b|elif\b|else\b|while\b|with\b|try\b|except\b|finally\b)/.test(cur.trim())) {
+        cur += ch; push(); i++; continue;
+      }
+      if (ch === ' ' && cur.trim()) {
+        const rest = flat.slice(i + 1);
+        const m = rest.match(KW);
+        if (m) { push(); cur = m[1]; i += m[1].length; continue; }
+        if (/^else\s*:/.test(rest)) { push(); cur = 'else:'; i += rest.indexOf(':') + 1; continue; }
+        if (/^try\s*:/.test(rest)) { push(); cur = 'try:'; i += rest.indexOf(':') + 1; continue; }
+        if (paren === 0 && !/,\s*$/.test(cur) && /^[A-Za-z_][\w,\s]*=[^=]/.test(rest) && !/^(def|for|if|while|return|with)\b/.test(cur.trim())) { push(); continue; }
+      }
+      cur += ch;
+    }
+    push();
+    let depth = 0;
+    const out = [];
+    for (const ln of lines) {
+      let d = depth;
+      if (/^(elif\b|else\b|except\b|finally\b)/.test(ln)) d = Math.max(0, depth - 1);
+      out.push('    '.repeat(d) + ln);
+      if (ln.endsWith(':')) depth = d + 1;
+    }
+    return out.join('\n');
+  }
+  // Kuch models samjhate waqt points ko ek hi paragraph me daba dete hain
+  // (jaise: "1. pehla 2. dusra * ye * wo") — padhne me ghana aur bekar lagta hai.
+  // Ye halki repair un points ko alag-alag lines par le aati hai.
+  function repairSqueezedText(s) {
+    let t = String(s);
+    t = t.replace(/([:;]) \* /g, '$1\n* ');
+    t = t.replace(/\. \* (?=[\w`])/g, '.\n* ');
+    t = t.replace(/([.!?:]) (\d{1,2})\. (?=[\w`])/g, '$1\n$2. ');
+    return t;
+  }
+  function renderMarkdown(src) {
+    const blocks = [];
+    let s = String(src).replace(/```(\w*)\n?([\s\S]*?)```/g, (m, lang, code) => {
+      const fixedCode = repairOneLineCode(code, lang); blocks.push({ lang: lang, code: fixedCode, fixed: fixedCode !== code });
+      return '\u0001' + (blocks.length - 1) + '\u0001';
+    });
+    s = repairSqueezedText(s);
+    s = escapeHtml(s);
+    s = s.replace(/^### (.*)$/gm, '<h4>$1</h4>').replace(/^## (.*)$/gm, '<h3>$1</h3>').replace(/^# (.*)$/gm, '<h2>$1</h2>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/`([^`]+)`/g, '<code class="inline">$1</code>');
+    s = s.replace(/((?:^\|.*\|\s*$\n?)+)/gm, (m) => {
+      const rows = m.trim().split('\n').map((r) => r.trim()).filter((r) => !/^\|[-: |]+\|$/.test(r));
+      if (!rows.length) return m;
+      const cells = rows.map((r) => r.replace(/^\||\|$/g, '').split('|').map((c) => c.trim()));
+      let h = '<div class="tablewrap"><table>';
+      cells.forEach((r, i) => { h += '<tr>' + r.map((c) => i === 0 ? '<th>' + c + '</th>' : '<td>' + c + '</td>').join('') + '</tr>'; });
+      return h + '</table></div>';
+    });
+    s = s.replace(/(^(?:[ \t]*[-*] .+\n?)+)/gm, (m) => '<ul>' + m.trim().split('\n').map((l) => '<li>' + l.replace(/^[ \t]*[-*] /, '') + '</li>').join('') + '</ul>');
+    s = s.replace(/(^(?:[ \t]*\d+\. .+\n?)+)/gm, (m) => '<ol>' + m.trim().split('\n').map((l) => '<li>' + l.replace(/^[ \t]*\d+\. /, '') + '</li>').join('') + '</ol>');
+    s = s.replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>');
+    s = s.replace(/\u0001(\d+)\u0001/g, (m, i) => {
+      const b = blocks[+i];
+      return '<div class="codeblock"><div class="codehead"><span>' + escapeHtml(b.lang || 'code') + (b.fixed ? ' <span class="repairic" title="Formatting saaf ki gayi — ek-line me daba code app ne khud sahi lines me toda">&#10024;</span>' : '') + '</span><span><button class="copycode" type="button">Copy</button> <button class="ghostcode" type="button">&#9000; Type</button> <button class="pastecode" type="button">&#128203; Paste</button> <button class="wrapcode" type="button">Wrap</button> <button class="expandcode" type="button">Expand</button></span></div><pre><code>' + highlightCode(escapeHtml(b.code.replace(/\n$/, ''))) + '</code></pre></div>';
+    });
+    return s;
+  }
+  function renderMath(el) {
+    try {
+      if (window.renderMathInElement) {
+        window.renderMathInElement(el, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }] });
+      }
+    } catch (e) { /* ignore */ }
+  }
+  let lastUserQ = '';
+  let lastAskImg = null;
+  let currentAskCtx = null;
+  function setSending(on) {
+    if (on) { sendBtn.textContent = '⏹ Stop'; sendBtn.classList.add('stopbtn'); sendBtn.disabled = false; }
+    else { sendBtn.textContent = 'Bhejo'; sendBtn.classList.remove('stopbtn'); sendBtn.disabled = false; }
+  }
+  function growInput() {
+    chatText.style.height = 'auto';
+    chatText.style.height = Math.min(chatText.scrollHeight, 132) + 'px';
+  }
+
+  function showToast(msg, ms) {
+    const t = document.getElementById('dupToast');
+    if (!t) return;
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(showToast._tm);
+    showToast._tm = setTimeout(() => { t.style.display = 'none'; }, ms || 4200);
+  }
+  function addMsg(cls, text, imgUrl) {
+    if (cls === 'sys' && text && text.indexOf('chal raha hai') >= 0) { showToast('⏳ Wahi sawal abhi chal raha hai — hang tight, jawab aa raha hai.'); return document.createElement('div'); }
+    const d = document.createElement('div');
+    d.className = 'msg ' + cls;
+    if (imgUrl) {
+      const im = document.createElement('img');
+      im.src = imgUrl;
+      d.appendChild(im);
+    }
+    const t = document.createElement('span');
+    t.className = 'txt';
+    t.textContent = text;
+    d.appendChild(t);
+    d._txt = t;
+    if (cls === 'ai') {
+      const st = document.createElement('div');
+      st.className = 'status';
+      d.appendChild(st);
+      d._status = st;
+      const act = document.createElement('div');
+      act.className = 'actions';
+      const cp = document.createElement('button');
+      cp.type = 'button';
+      cp.textContent = '📋 Copy';
+      cp.setAttribute('aria-label', 'Jawab copy karo');
+      cp.addEventListener('click', () => { try { navigator.clipboard.writeText(d._raw || t.textContent); } catch (e) { /* ignore */ } });
+      const rg = document.createElement('button');
+      rg.type = 'button';
+      rg.textContent = '🔄 Dobara';
+      rg.setAttribute('aria-label', 'Jawab dobara banao');
+      rg.addEventListener('click', () => { if (lastUserQ) askAI(lastUserQ); });
+      act.appendChild(cp);
+      act.appendChild(rg);
+      [['💡 Samjhao', 'Upar wale jawab ko aur bhi simple bhasha me samjhao, ek chhota sa example dekar.'], ['✏️ Example', 'Upar wale topic par ek easy, roz-marra ki zindagi wala example do.'], ['⚡ Short', 'Upar wale jawab ko bahut short me, sirf main points me batao.']].forEach((qa) => {
+        const qb = document.createElement('button');
+        qb.type = 'button';
+        qb.textContent = qa[0];
+        qb.setAttribute('aria-label', qa[0]);
+        qb.addEventListener('click', () => askAI(qa[1]));
+        act.appendChild(qb);
+      });
+      const pb = document.createElement('button');
+      pb.type = 'button';
+      pb.textContent = '📌 Pin';
+      pb.setAttribute('aria-label', 'Ye jawab pin karke hamesha ke liye save karo');
+      pb.addEventListener('click', () => { const a = d._raw || t.textContent; if (!a) return; if (!pinsList.some((x) => x.a === a)) { pinsList.unshift({ q: lastUserQ || '', a: a, ts: Date.now() }); if (pinsList.length > 50) pinsList.length = 50; savePins(); renderPins(); } addMsg('sys', '📌 Jawab pin ho gaya — Settings me Saved Jawab me hamesha milega.'); });
+      act.appendChild(pb);
+      try {
+        const more = document.createElement('span'); more.className = 'moreActs';
+        Array.from(act.children).forEach((b) => { if (/Samjhao|Example|Short/.test(b.textContent)) more.appendChild(b); });
+        const pc = document.createElement('button'); pc.type = 'button'; pc.textContent = '📄 Plain copy';
+        pc.setAttribute('aria-label', 'Jawab bina formatting ke copy karo');
+        pc.addEventListener('click', () => { try { navigator.clipboard.writeText((d._raw || t.textContent).replace(/[#*`>_~]/g, '')); } catch (e) { /* ignore */ } });
+        more.appendChild(pc);
+        const dots = document.createElement('button'); dots.type = 'button'; dots.textContent = '•••';
+        dots.setAttribute('aria-label', 'Aur options');
+        dots.addEventListener('click', () => more.classList.toggle('open'));
+        act.appendChild(dots); act.appendChild(more);
+      } catch (e) { /* ignore */ }
+      d.appendChild(act);
+      d._actions = act;
+      const b = document.createElement('button');
+      b.className = 'spk spk-voice';
+      if (settings.muted !== false) b.style.display = 'none';
+      b.textContent = '\u{1F50A}';
+      b.title = 'Jawab suno';
+      b.setAttribute('aria-label', 'Jawab suno');
+      b.addEventListener('click', () => speakText(t.textContent));
+      d.appendChild(b);
+      const g = document.createElement('button');
+      g.className = 'spk';
+      g.textContent = '\u{2328}';
+      g.title = 'Ghost typing - ye jawab dusri app me khud type hoga';
+      g.setAttribute('aria-label', 'Ghost typing');
+      g.addEventListener('click', () => startGhostType(t.textContent));
+      d.appendChild(g);
+    }
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    d.appendChild(meta);
+    messagesEl.appendChild(d);
+    pruneMessages();
+    scrollChat(true);
+    return d;
+  }
+
+  // ---------- Screenshot attach (software khud photo me kabhi nahi) ----------
+  let pendingImage = null; // full data URL of the captured screen
+  const shotBtn = document.getElementById('shotBtn');
+  const attachPreview = document.getElementById('attachPreview');
+  const attachImg = document.getElementById('attachImg');
+
+  shotBtn.addEventListener('click', async () => {
+    shotBtn.disabled = true;
+    shotBtn.textContent = 'Le raha hoon...';
+    try {
+      const url = await window.api.captureScreen();
+      if (url) {
+        pendingImage = url;
+        attachImg.src = url;
+        attachPreview.style.display = 'flex';
+      } else {
+        addMsg('sys', 'Screenshot nahi ho paya. Dobara try karo.');
+      }
+    } catch (e) {
+      addMsg('sys', 'Screenshot nahi ho paya. Dobara try karo.');
+    }
+    shotBtn.disabled = false;
+    shotBtn.innerHTML = '&#128247; Screenshot';
+  });
+  document.getElementById('removeAttach').addEventListener('click', () => {
+    pendingImage = null;
+    attachPreview.style.display = 'none';
+  });
+
+  // ---------- Reliability core: cooldown, speed stats, debug log ----------
+  // Shared state: cooldown + usage + cache dono windows ke beech main-process store se baantna.
+  // Per-provider gate: ek provider par ek samay par ek hi request — do sawal ek saath
+  // ane par key rotation aur health stats kharab nahi hote. 3 sec se zyada wait nahi.
+
+  // Warm-up: app khulte hi sabse tez provider ko 1-token ki chhoti call —
+  // connection/DNS/TLS garam ho jata hai, pehla asli jawab tez ata hai.
+  async function warmUp() {
+    try {
+      const bag = makeKeyBag();
+      const order = ['cerebras', 'groq', 'openrouter', 'github', 'mistral', 'sambanova'];
+      for (const pid of order) {
+        const ks = bag.providers[pid];
+        if (ks && keyCount(ks)) {
+          const key = String(ks).split(/[\n,]+/).map((s) => s.trim()).filter(Boolean)[0];
+          const P = PROVIDERS[pid];
+          await apiFetch(P.base + '/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+            body: JSON.stringify({ model: P.fast, messages: [{ role: 'user', content: 'hi' }], max_tokens: 1, stream: false })
+          });
+          return;
+        }
+      }
+      if (bag.gemini) {
+        await apiFetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': bag.gemini },
+          body: JSON.stringify({ contents: [{ parts: [{ text: 'hi' }] }], generationConfig: { maxOutputTokens: 1 } })
+        });
+      }
+    } catch (e) { /* warm-up fail = koi baat nahi */ }
+  }
+
+
+  // ---------- Smart Scheduler: ek samay par ek hi sawal chalega; wahi sawal
+  // dobara bhejna (duplicate) roka jayega; busy ho to sawal line (queue) me lagega.
+
+  async function askAIInner(forcedQ) {
+    const keyBag = makeKeyBag();
+    let q = (typeof forcedQ === 'string' ? forcedQ : chatText.value.trim());
+    if (!q && !pendingImage) return;
+    if (!anyKey(keyBag)) { addMsg('sys', 'Pehle ⚙ Settings page me jaakar kisi ek provider ki API key daal kar Save karo. Sab free hain: Groq (console.groq.com), Cerebras (cloud.cerebras.ai), Gemini (aistudio.google.com), OpenRouter (openrouter.ai).'); return; }
+    if (!q && pendingImage) q = 'Is screenshot ko dekho aur isme jo topic ya doubt hai, wo simple bhasha me samjhao.';
+    // Request-size limit + roz ki usage limit/warning (budget protection)
+    if (q.length > 8000) { addMsg('sys', 'Sawal bahut lamba hai (8000 characters se zyada). Thoda chhota karke bhejo.'); return; }
+    if (pendingImage && pendingImage.length > 2000000) { addMsg('sys', 'Photo bahut badi hai. Chhoti photo bhejo.'); return; }
+    const todayReq = usageTodayCount();
+    if (settings.dailyLimit > 0 && todayReq >= settings.dailyLimit) { addMsg('sys', '⛔ Aaj ki API request limit (' + settings.dailyLimit + ') poori ho gayi hai. Settings me "API Usage" se limit badha sakte ho.'); return; }
+    if (settings.warnAt > 0 && todayReq >= settings.warnAt && !warnedToday) { warnedToday = true; addMsg('sys', '⚠ Aaj ' + todayReq + ' API requests ho chuki hain (tumhara warning level: ' + settings.warnAt + ').'); }
+    await mergeSharedState();
+    // Cache: wahi sawal, wahi settings — purana jawab turant, saaf taur par "cache se" bolkar.
+    const bypassCache = !!window.__cacheBypassOnce; window.__cacheBypassOnce = false;
+    if (!pendingImage && settings.cacheEnabled && !bypassCache) {
+      const hit = cacheGet(q);
+      if (hit) {
+        addMsg('user', q.length > 220 ? q.slice(0, 220) + '...' : q);
+        chatText.value = '';
+        growInput();
+        const cb = addMsg('ai', '');
+        cb._raw = hit.a;
+        cb._txt.innerHTML = renderMarkdown(hit.a);
+        cb._txt.classList.add('rendered');
+        renderMath(cb._txt);
+        cb.classList.add('done');
+        convo.push({ who: 'user', text: q });
+        convo.push({ who: 'ai', text: hit.a });
+        persistCurrentChat();
+        persistConvo();
+        lastUserQ = q;
+        const agoMin = Math.max(0, Math.round((Date.now() - (hit.ts || Date.now())) / 60000));
+        const agoTxt = agoMin < 1 ? 'abhi ka' : (agoMin < 60 ? agoMin + ' min pehle ka' : Math.round(agoMin / 60) + ' ghante pehle ka');
+        const cl = document.createElement('div'); cl.className = 'cachelbl';
+        cl.appendChild(document.createTextNode('\u{1F4E6} Cached \u00B7 ' + agoTxt + ' \u00B7 ' + hit.p + (hit.m ? ' (' + hit.m + ')' : '')));
+        const fb = document.createElement('button'); fb.type = 'button'; fb.textContent = 'Naya jawab lao';
+        fb.addEventListener('click', () => { window.__cacheBypassOnce = true; askAI(q); });
+        cl.appendChild(document.createTextNode(' \u00B7 ')); cl.appendChild(fb);
+        cb.appendChild(cl);
+        scrollChat(true);
+        return;
+      }
+    }
+    const imgForThisMsg = pendingImage;
+    lastUserQ = q;
+    lastAskImg = imgForThisMsg;
+    if (imgForThisMsg) { const hasVision = !!(keyCache.gemini || (keyCache.providers && (keyCache.providers.groq || keyCache.providers.github || keyCache.providers.openrouter)) || (keyCache.customs && keyCache.customs.length)); if (!hasVision) { addMsg('sys', '\u26A0 Tumhare kisi bhi jude provider ke paas photo padhne (vision) ki taqat nahi hai \u2014 pehle Gemini ya Groq ki key jodo, phir photo bhejo.'); return; } }
+    addMsg('user', q.length > 220 ? q.slice(0, 220) + '...' : q, imgForThisMsg || undefined);
+    chatText.value = '';
+    growInput();
+    pendingImage = null;
+    attachPreview.style.display = 'none';
+
+    try { localStorage.setItem('pending_ask_v1', JSON.stringify({ q: q, img: !!imgForThisMsg, ts: Date.now() })); } catch (e) { /* ignore */ }
+    const thinking = addMsg('ai', '');
+    thinking._txt.innerHTML = '<span class="tdots"><i></i><i></i><i></i></span>';
+    const askCtx = { ctrls: new Set(), stopped: false };
+    currentAskCtx = askCtx;
+    setSending(true);
+    lastAiError = '';
+    lastBlocked = [];
+    let ans = null;
+    try { ans = await answerInto(keyBag, q, imgForThisMsg, thinking, askCtx); } catch (e) { ans = null; }
+    currentAskCtx = null;
+    setSending(false);
+    if (!ans && !askCtx.stopped) { const streamedTxt = (thinking._txt.textContent || '').trim(); if (streamedTxt.length >= 40) ans = streamedTxt; }
+    if (askCtx.stopped) {
+      thinking._txt.textContent = '⏹ Jawab rok diya gaya.';
+      if (thinking._status) thinking._status.textContent = '';
+    } else if (ans) {
+      thinking._raw = ans;
+      thinking._txt.innerHTML = renderMarkdown(ans);
+      thinking._txt.classList.add('rendered');
+      renderMath(thinking._txt);
+      thinking.classList.add('done');
+      if (thinking._status) thinking._status.textContent = '';
+      try { const lm = window.__scpLast; if (lm && lm.pid) { const bd = document.createElement('div'); bd.className = 'ansbadge'; const att = window.__scpAttempts || 1; bd.innerHTML = '<span class="dot' + (att > 1 ? ' amber' : '') + '"></span><span></span>'; bd.querySelector('span:last-child').textContent = (lm.pid === 'gemini' ? 'Gemini' : lm.pid) + (lm.model ? ' \u00B7 ' + lm.model : ''); bd.title = 'Answered by ' + lm.pid + (lm.model ? ' \u00B7 ' + lm.model : '') + (lm.ttft != null ? ' \u00B7 ' + (lm.ttft / 1000).toFixed(1) + 's me pehla shabd' : '') + (att > 1 ? ' \u00B7 ' + att + ' koshishon ke baad' : ''); thinking.appendChild(bd); } } catch (e) { /* ignore */ }
+      convo.push({ who: 'user', text: imgForThisMsg ? q + ' [saath me ek screenshot bheja hai]' : q });
+      convo.push({ who: 'ai', text: ans });
+      persistCurrentChat();
+      if (!imgForThisMsg) cacheSet(q, ans);
+    } else {
+      thinking.classList.add('error');
+      const errKind = /429|rate|quota|limit/i.test(lastAiError) ? 'limit' : (/fetch|network|internet|ENOTFOUND|Failed to/i.test(lastAiError) ? 'net' : 'gen');
+      thinking._txt.textContent = errKind === 'limit' ? 'Saare providers abhi rate-limit par hain \u2014 thodi der baad try karo.' : (errKind === 'net' ? 'Internet se jud nahi paya \u2014 connection check karke dobara try karo.' : 'Jawab nahi aa paya. Provider ki taraf se dikkat hai.');
+      const tech = document.createElement('details'); tech.className = 'tech';
+      const tsum = document.createElement('summary'); tsum.textContent = 'Technical details'; tech.appendChild(tsum);
+      const tdiv = document.createElement('div'); tdiv.textContent = (lastAiError ? 'Asli wajah: ' + lastAiError : 'Koi khaas wajah nahi mili.') + (window.__scpLast && window.__scpLast.id ? ' \u00B7 Request ID: ' + window.__scpLast.id : '') + (lastBlocked.length ? ' \u00B7 Ye providers approve na hone se skip hue: ' + lastBlocked.join(', ') + ' (Settings \u2192 Providers & Keys se approve kar sakte ho)' : '');
+      tech.appendChild(tdiv); thinking.appendChild(tech);
+      if (thinking._status) thinking._status.textContent = '';
+      const rb = document.createElement('button');
+      rb.type = 'button';
+      rb.className = 'retrybtn';
+      rb.textContent = '🔁 Retry';
+      rb.setAttribute('aria-label', 'Dobara try karo');
+      rb.addEventListener('click', () => { thinking.remove(); pendingImage = lastAskImg; askAI(lastUserQ); });
+      thinking.appendChild(rb);
+      try { const conf = (keyCache.gemini ? ['gemini'] : []).concat(Object.keys(keyCache.providers || {}).filter((p) => keyCount(keyCache.providers[p]) > 0)); if (conf.length > 1) { const ob = document.createElement('button'); ob.type = 'button'; ob.className = 'retrybtn'; ob.textContent = '\u{1F500} Dusra provider'; ob.setAttribute('aria-label', 'Dusre provider se try karo'); ob.addEventListener('click', () => { const others = conf.filter((p) => p !== settings.provider); if (others.length) { settings.provider = others[0]; const pq = document.getElementById('providerQuick'); if (pq) pq.value = others[0]; } thinking.remove(); pendingImage = lastAskImg; askAI(lastUserQ); }); thinking.appendChild(ob); } } catch (e) { /* ignore */ }
+    }
+    try { localStorage.removeItem('pending_ask_v1'); } catch (e) { /* ignore */ }
+    persistConvo();
+    renderUsage();
+    try { updateLimitBar(); updateRememberStrip(); } catch (e) { /* ignore */ }
+    scrollChat(true);
+  }
+  sendBtn.addEventListener('click', () => { if (currentAskCtx) stopCurrentAsk(); else askAI(); });
+  chatText.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!currentAskCtx) askAI(); } });
+  chatText.addEventListener('input', growInput);
+  chatText.addEventListener('paste', (e) => {
+    try {
+      const items = (e.clipboardData && e.clipboardData.items) || [];
+      for (const it of items) {
+        if (it.type && it.type.indexOf('image/') === 0) {
+          const file = it.getAsFile();
+          if (!file) continue;
+          const reader = new FileReader();
+          reader.onload = () => {
+            pendingImage = reader.result;
+            attachImg.src = reader.result;
+            attachPreview.style.display = 'flex';
+            addMsg('sys', 'Photo paste ho gayi — ab sawal likh kar Bhejo dabao.');
+          };
+          reader.readAsDataURL(file);
+          e.preventDefault();
+          break;
+        }
+      }
+    } catch (err) { /* ignore */ }
+  });
+
+  // Chat clear: poori chat + AI ki is chat ki yaad (convo) saaf — nayi shuruaat.
+  function clearChat() {
+    if (listenRec && listenRec.state === 'recording') { addMsg('sys', 'Pehle Live band karo (Suno dabao), phir chat clear karo.'); return; }
+    convo = [];
+    messagesEl.innerHTML = '';
+    liveMsg = null;
+    draftBubble = null;
+    pendingImage = null;
+    attachPreview.style.display = 'none';
+    addMsg('sys', 'Chat saaf ho gayi. Naya doubt puchho!');
+  }
+  document.getElementById('clearBtn').addEventListener('click', clearChat);
+  const headClearBtn = document.getElementById('headClearBtn');
+  if (headClearBtn) headClearBtn.addEventListener('click', () => newChat());
+
+  // ---------- Alag-alag Chats (ChatGPT jaisa): har topic ki apni chat, puri memory ke saath ----------
+  let currentChatId = null;
+  function loadChats() { try { return JSON.parse(localStorage.getItem('scp_chats_v1') || '[]'); } catch (e) { return []; } }
+  function saveChats(list) { try { localStorage.setItem('scp_chats_v1', JSON.stringify((list || []).slice(0, 20))); } catch (e) { /* ignore */ } }
+  function persistCurrentChat() {
+    if (!convo || !convo.length) return;
+    if (!currentChatId) { currentChatId = 'c' + Date.now(); try { localStorage.setItem('scp_current_chat', currentChatId); } catch (e) { /* ignore */ } }
+    const firstQ = convo.find((t) => t.who === 'user');
+    const rec = { id: currentChatId, title: (firstQ ? firstQ.text : 'Nayi chat').slice(0, 48), ts: Date.now(), items: convo.slice(-50) };
+    const list = loadChats();
+    const ix = list.findIndex((c) => c.id === currentChatId);
+    if (ix >= 0) list[ix] = rec; else list.unshift(rec);
+    saveChats(list);
+  }
+  function renderChatList() {
+    const el = document.getElementById('chatList');
+    if (!el) return;
+    const searchEl = document.getElementById('chatSearch');
+    const q = ((searchEl && searchEl.value) || '').toLowerCase();
+    let pinsMap = {};
+    try { pinsMap = JSON.parse(localStorage.getItem('scp_chat_pins') || '{}') || {}; } catch (e) { pinsMap = {}; }
+    let list = loadChats();
+    if (q) list = list.filter((c) => (c.title || '').toLowerCase().indexOf(q) >= 0 || (c.items || []).some((it) => (it.text || '').toLowerCase().indexOf(q) >= 0));
+    el.innerHTML = '';
+    if (!list.length) { el.innerHTML = '<div style="padding:6px; opacity:.7;">' + (q ? 'Is naam ki koi chat nahi mili.' : 'Abhi koi purani chat nahi hai \u2014 pehli chat apne aap yahan save hogi.') + '</div>'; return; }
+    const now = new Date(); const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(); const startYest = startToday - 86400000;
+    const groups = [['\u{1F4CC} Pinned', list.filter((c) => pinsMap[c.id])], ['Aaj', list.filter((c) => !pinsMap[c.id] && c.ts >= startToday)], ['Kal', list.filter((c) => !pinsMap[c.id] && c.ts < startToday && c.ts >= startYest)], ['Purani', list.filter((c) => !pinsMap[c.id] && c.ts < startYest)]];
+    groups.forEach(([label, items]) => {
+      if (!items.length) return;
+      const gh = document.createElement('div'); gh.className = 'chatgroup'; gh.textContent = label; el.appendChild(gh);
+      items.forEach((c) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; gap:4px; padding:3px 0; align-items:center;';
+        const b = document.createElement('button');
+        b.className = 'navbtn';
+        b.style.cssText = 'flex:1; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+        b.textContent = (c.id === currentChatId ? '\u25B6 ' : '') + c.title;
+        b.title = new Date(c.ts).toLocaleString('en-IN');
+        b.addEventListener('click', () => openChat(c.id));
+        const pin = document.createElement('button'); pin.className = 'navbtn'; pin.textContent = '\u{1F4CC}'; pin.title = pinsMap[c.id] ? 'Unpin karo' : 'Pin karo (upar rahegi)';
+        pin.addEventListener('click', () => { try { const m = JSON.parse(localStorage.getItem('scp_chat_pins') || '{}') || {}; if (m[c.id]) delete m[c.id]; else m[c.id] = 1; localStorage.setItem('scp_chat_pins', JSON.stringify(m)); } catch (e) { /* ignore */ } renderChatList(); });
+        const ren = document.createElement('button'); ren.className = 'navbtn'; ren.textContent = '\u270F'; ren.title = 'Naam badlo';
+        ren.addEventListener('click', () => { const nt = prompt('Chat ka naya naam:', c.title); if (nt && nt.trim()) { const all = loadChats(); const t = all.find((x) => x.id === c.id); if (t) { t.title = nt.trim().slice(0, 60); saveChats(all); } renderChatList(); try { updateChatTitle(); } catch (e) { /* ignore */ } } });
+        const del = document.createElement('button'); del.className = 'navbtn'; del.textContent = '\u{1F5D1}'; del.title = 'Ye chat hata do';
+        del.addEventListener('click', () => { if (!confirm('Ye chat pakka hata dein?')) return; saveChats(loadChats().filter((x) => x.id !== c.id)); if (c.id === currentChatId) currentChatId = null; renderChatList(); });
+        row.appendChild(b); row.appendChild(pin); row.appendChild(ren); row.appendChild(del);
+        el.appendChild(row);
+      });
+    });
+  }
+  function toggleChatPanel(force) {
+    const s = document.getElementById('chatSide');
+    if (!s) return;
+    if (force === true) { s.classList.remove('hidden'); renderChatList(); return; }
+    if (force === false) return;
+    s.classList.toggle('hidden');
+    if (!s.classList.contains('hidden')) renderChatList();
+  }
+  function openChat(id) {
+    const rec = loadChats().find((c) => c.id === id);
+    if (!rec) return;
+    currentChatId = id;
+    try { localStorage.setItem('scp_current_chat', id); } catch (e) { /* ignore */ }
+    convo = (rec.items || []).slice(-50);
+    messagesEl.innerHTML = '';
+    liveMsg = null;
+    draftBubble = null;
+    convo.forEach((t) => {
+      const d = addMsg(t.who === 'user' ? 'user' : 'ai', '');
+      if (t.who === 'ai') { d._raw = t.text; d._txt.innerHTML = renderMarkdown(t.text); d._txt.classList.add('rendered'); renderMath(d._txt); d.classList.add('done'); }
+      else d._txt.textContent = t.text.length > 220 ? t.text.slice(0, 220) + '...' : t.text;
+    });
+    toggleChatPanel(false);
+    addMsg('sys', 'Chat wapas khul gayi — AI ko iski puri baat-cheet yaad hai, aage wahi se puchh sakte ho.');
+  }
+  function newChat() {
+    persistCurrentChat();
+    currentChatId = null;
+    try { localStorage.removeItem('scp_current_chat'); } catch (e) { /* ignore */ }
+    clearChat();
+  }
+  const chatsBtn = document.getElementById('chatsBtn');
+  if (chatsBtn) chatsBtn.addEventListener('click', () => toggleChatPanel());
+  const sideNewChat = document.getElementById('sideNewChat');
+  if (sideNewChat) sideNewChat.addEventListener('click', () => newChat());
+  const sideThemeBtn = document.getElementById('sideThemeBtn');
+  if (sideThemeBtn) sideThemeBtn.addEventListener('click', () => { settings.theme = settings.theme === 'dark' ? 'light' : (settings.theme === 'light' ? 'glass' : 'dark'); if (themeSel) themeSel.value = settings.theme; applyTheme(); saveFmtSettings(); });
+  renderChatList();
+
+  // ---------- Pin kiye hue jawab (dono windows me shared, hamesha ke liye save) ----------
+  let pinsList = [];
+  function savePins() { try { if (window.api && window.api.syncKeys) window.api.syncKeys({ pins: JSON.stringify(pinsList) }); } catch (e) { /* ignore */ } }
+  function renderPins() {
+    const el = document.getElementById('pinsList');
+    if (!el) return;
+    el.innerHTML = '';
+    if (!pinsList.length) { el.innerHTML = '<div style="opacity:.7; padding:4px 0;">Abhi koi jawab pin nahi hai — kisi jawab ke neeche 📌 Pin dabao, wo yahan hamesha ke liye save ho jayega.</div>'; return; }
+    pinsList.forEach((pin, ix) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex; gap:6px; align-items:flex-start; padding:5px 0; border-bottom:1px dashed rgba(127,127,127,.25);';
+      const tx = document.createElement('div');
+      tx.style.cssText = 'flex:1; font-size:13px; white-space:pre-wrap;';
+      tx.textContent = (pin.q ? 'Q: ' + pin.q.slice(0, 60) + '\n' : '') + pin.a.slice(0, 220) + (pin.a.length > 220 ? '...' : '');
+      const cp = document.createElement('button');
+      cp.className = 'navbtn';
+      cp.textContent = '📋 Copy';
+      cp.addEventListener('click', () => { try { navigator.clipboard.writeText(pin.a); } catch (e) { /* ignore */ } });
+      const del = document.createElement('button');
+      del.className = 'navbtn';
+      del.textContent = '🗑';
+      del.addEventListener('click', () => { pinsList.splice(ix, 1); savePins(); renderPins(); });
+      row.appendChild(tx);
+      row.appendChild(cp);
+      row.appendChild(del);
+      el.appendChild(row);
+    });
+  }
+  renderPins();
+
+  // ---------- LIVE CLASS MODE: student bolte-bolte live translation + live draft jawab,
+  // khamoshi (2.5 sec) ya button OFF par final jawab. Sirf tab sunta hai jab ON ho. ----------
+  const listenBtn = document.getElementById('listenBtn');
+  const listenBtnHead = document.getElementById('listenBtnHead');
+  if (listenBtnHead) listenBtnHead.addEventListener('click', () => listenBtn.click());
+  let listenRec = null;
+  let listenChunks = [];
+  let listenStream = null;
+  let listenTimer = null;
+  let liveOn = false;
+  let liveBusy = false;
+  let liveText = '';
+  let liveMsg = null;
+  let liveTickTimer = null;
+  let liveGroqKey = null;
+  let draftBubble = null;
+  let draftBusy = false;
+  let draftForText = '';
+  let draftCount = 0;
+  let liveAudioCtx = null;
+  let liveAnalyser = null;
+  let liveSawSpeech = false;
+  let liveSilence = 0;
+  let liveSilenceTimer = null;
+
+  async function translateAndAsk(blob) {
+    const hint = addMsg('sys', 'Awaz sun li - translate karke samajh raha hoon...');
+    let text = await whisperAny(blob, 'translations');
+    if (!text) text = await whisperAny(blob, 'transcriptions');
+    if (!text) { hint._txt.textContent = 'Awaz saaf samajh nahi ayi. Kuch aur play karke dobara Suno dabao.'; return; }
+    hint.remove();
+    await askAI('Maine screen par chal rahi awaz suni hai. Usme ye kaha gaya (translate karke): "' + text.slice(0, 1500) + '" - Ab isme kya kaha gaya hai wo samjhao, aur agar isme koi sawal ya main topic hai to uska jawab bhi do.');
+  }
+
+  // Bolte-bolte har 5 second me ab tak ki awaz ka translation live line me.
+  async function liveTick() {
+    if (!liveOn || liveBusy || !listenChunks.length || !liveGroqKey) return;
+    liveBusy = true;
+    try {
+      const blob = new Blob(listenChunks, { type: (listenRec && listenRec.mimeType) || 'audio/webm' });
+      let text = await whisperAny(blob, 'translations');
+      if (!text) text = await whisperAny(blob, 'transcriptions');
+      if (text && text !== liveText) {
+        liveText = text;
+        if (liveMsg) liveMsg._txt.textContent = '\u{1F3A7} Interviewer (live): ' + text;
+        maybeDraft();
+      }
+    } catch (e) { /* ignore */ }
+    liveBusy = false;
+  }
+
+  // Sawal bante hi draft jawab bhi banta rahe (streaming) — final jawab rukne par ayega.
+  async function maybeDraft() {
+    if (!liveOn || draftBusy || !liveText || liveText.length < 25 || draftCount >= 6) return;
+    if (liveText === draftForText) return;
+    const keyBag = makeKeyBag();
+    if (!anyKey(keyBag)) return;
+    draftBusy = true;
+    draftForText = liveText;
+    draftCount++;
+    if (!draftBubble) draftBubble = addMsg('ai', '✏️ Draft jawab taiyaar ho raha hai...');
+    else draftBubble._txt.textContent = '✏️ Draft jawab update ho raha hai...';
+    const q = 'Live class me student ye sawal puch raha hai (sawal abhi chal raha ho sakta hai, jitna suna hai usi par jawab do): "' + liveText.slice(0, 1200) + '" - Iska jawab do.';
+    try { await answerInto(keyBag, q, null, draftBubble); } catch (e) { /* ignore */ }
+    draftBusy = false;
+    if (liveOn && liveText.length > draftForText.length + 20) maybeDraft();
+  }
+
+  // Khamoshi pehchano: student 2.5 second chup = sawal khatm = khud ruk jao (final jawab).
+  function startSilenceWatch() {
+    try {
+      liveAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const srcNode = liveAudioCtx.createMediaStreamSource(listenStream);
+      liveAnalyser = liveAudioCtx.createAnalyser();
+      liveAnalyser.fftSize = 512;
+      srcNode.connect(liveAnalyser);
+      const data = new Uint8Array(liveAnalyser.fftSize);
+      liveSilenceTimer = setInterval(() => {
+        if (!liveOn || !liveAnalyser) return;
+        liveAnalyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) { const v = (data[i] - 128) / 128; sum += v * v; }
+        const rms = Math.sqrt(sum / data.length);
+        if (rms > 0.03) { liveSawSpeech = true; liveSilence = 0; }
+        else if (liveSawSpeech) {
+          liveSilence += 0.5;
+          if (liveSilence >= 2.5 && listenRec && listenRec.state === 'recording') listenRec.stop();
+        }
+      }, 500);
+    } catch (e) { /* auto-stop nahi chalega to manual stop chalega */ }
+  }
+  function stopSilenceWatch() {
+    if (liveSilenceTimer) { clearInterval(liveSilenceTimer); liveSilenceTimer = null; }
+    if (liveAudioCtx) { try { liveAudioCtx.close(); } catch (e) { /* ignore */ } liveAudioCtx = null; }
+    liveAnalyser = null;
+    liveSawSpeech = false;
+    liveSilence = 0;
+  }
+
+  listenBtn.addEventListener('click', async () => {
+    if (listenRec && listenRec.state === 'recording') { listenRec.stop(); return; }
+    const groqKey = await freshGroqKey();
+    if (!groqKey) { addMsg('sys', 'Live Class Mode ke liye Groq key chahiye - ⚙ Settings page me Groq key daal kar Save karo (free hai, console.groq.com).'); return; }
+    try { listenStream = await getScreenAudioStream(); } catch (e) { listenStream = null; }
+    if (!listenStream) { addMsg('sys', 'Screen ki awaz nahi mili. Pehle kuch play karo (video/class), phir Suno dabao.'); return; }
+    listenChunks = [];
+    liveText = '';
+    draftForText = '';
+    draftCount = 0;
+    draftBubble = null;
+    liveGroqKey = groqKey;
+    listenRec = new MediaRecorder(listenStream);
+    listenRec.ondataavailable = (e) => { if (e.data.size) listenChunks.push(e.data); };
+    listenRec.onstop = async () => {
+      liveOn = false;
+      if (liveTickTimer) { clearInterval(liveTickTimer); liveTickTimer = null; }
+      stopSilenceWatch();
+      listenStream.getTracks().forEach((t) => t.stop());
+      listenBtn.classList.remove('inputrow-rec');
+      listenBtn.innerHTML = '&#127911; Suno';
+      clearTimeout(listenTimer);
+      if (liveMsg && liveText) liveMsg._txt.textContent = '\u{1F3A7} Student ne pucha: ' + liveText;
+      if (draftBubble) { draftBubble._txt.textContent = '✏️ (Draft) ' + draftBubble._txt.textContent; draftBubble = null; }
+      const blob = new Blob(listenChunks, { type: listenRec.mimeType || 'audio/webm' });
+      await translateAndAsk(blob);
+    };
+    listenRec.start(1000);
+    liveOn = true;
+    listenBtn.classList.add('inputrow-rec');
+    listenBtn.innerHTML = '&#9209; Live chal raha hai...';
+    liveMsg = addMsg('sys', '\u{1F3A7} Live Class Mode ON - student ke bolte hi sawal yahan LIVE ayega aur jawab bhi banta rahega. Student 2-3 second chup ho to final jawab apne aap aa jayega. Rukne ke liye Suno dobara dabao. (Zyada se zyada 4 minute ek baar me)');
+    liveTickTimer = setInterval(liveTick, 5000);
+    startSilenceWatch();
+    listenTimer = setTimeout(() => { if (listenRec && listenRec.state === 'recording') listenRec.stop(); }, 240000);
+  });
+
+  // ---------- Bol kar doubt (Groq Whisper) ----------
+  const micBtn = document.getElementById('micBtn');
+  let voiceRec = null;
+  let voiceChunks = [];
+  micBtn.addEventListener('click', async () => {
+    if (voiceRec && voiceRec.state === 'recording') { voiceRec.stop(); return; }
+    const groqKey = await freshGroqKey();
+    if (!groqKey) { addMsg('sys', 'Bol kar puchhne ke liye Groq key chahiye - upar Groq key daal kar Save karo (free hai, console.groq.com).'); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      voiceChunks = [];
+      voiceRec = new MediaRecorder(stream);
+      voiceRec.ondataavailable = (e) => { if (e.data.size) voiceChunks.push(e.data); };
+      voiceRec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        micBtn.classList.remove('inputrow-rec');
+        micBtn.innerHTML = '&#127908; Bol';
+        const blob = new Blob(voiceChunks, { type: voiceRec.mimeType || 'audio/webm' });
+        await transcribeDoubt(blob);
+      };
+      voiceRec.start();
+      micBtn.classList.add('inputrow-rec');
+      micBtn.innerHTML = '&#9209; Sun raha hoon...';
+    } catch (e) {
+      addMsg('sys', 'Mic nahi mila ya permission nahi mili. Mic check karo.');
+    }
+  });
+
+  async function transcribeDoubt(blob) {
+    const hint = addMsg('sys', 'Sun liya - samajh raha hoon...');
+    const text = await whisperAny(blob, 'transcriptions');
+    if (text) {
+      hint.remove();
+      chatText.value = text;
+      growInput();
+      chatText.focus();
+      return;
+    }
+    hint._txt.textContent = 'Awaz samajh nahi ayi. Dobara bolo ya likh kar bhejo.';
+  }
+
+  // ---------- Voice Recorder (screen voice + mic, alag On/Off) ----------
+  const swScreen = document.getElementById('swScreen');
+  const swMic = document.getElementById('swMic');
+  const recBtn = document.getElementById('recBtn');
+  const recStatus = document.getElementById('recStatus');
+  const recTime = document.getElementById('recTime');
+  const recPreview = document.getElementById('recPreview');
+  const saveRecBtn = document.getElementById('saveRecBtn');
+  let recMR = null;
+  let recChunks = [];
+  let recStreams = [];
+  let recCtx = null;
+  let recTimer = null;
+  let recStartAt = 0;
+  let lastRecBlob = null;
+
+  function fmtTime(ms) {
+    const s = Math.floor(ms / 1000);
+    return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+  }
+
+  async function getScreenAudioStream() {
+    const id = await window.api.getScreenSourceId();
+    if (!id) return null;
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: id } },
+      video: { mandatory: { chromeMediaSource: 'desktop', chromeMediaSourceId: id } }
+    });
+    stream.getVideoTracks().forEach((t) => t.stop());
+    if (!stream.getAudioTracks().length) { stream.getTracks().forEach((t) => t.stop()); return null; }
+    return stream;
+  }
+
+  recBtn.addEventListener('click', async () => {
+    if (recMR && recMR.state === 'recording') { recMR.stop(); return; }
+    const wantScreen = swScreen.checked;
+    const wantMic = swMic.checked;
+    if (!wantScreen && !wantMic) { recStatus.textContent = 'Kam se kam ek awaz ka switch ON karo - screen ki awaz ya mic, ek to chahiye.'; return; }
+    recStatus.textContent = 'Taiyaar ho raha hai...';
+    recStreams = [];
+    const problems = [];
+    if (wantScreen) {
+      try { const s = await getScreenAudioStream(); if (s) recStreams.push(s); else problems.push('screen ki awaz nahi mili'); }
+      catch (e) { problems.push('screen ki awaz nahi mili'); }
+    }
+    if (wantMic) {
+      try { const s = await navigator.mediaDevices.getUserMedia({ audio: true }); recStreams.push(s); }
+      catch (e) { problems.push('mic nahi mila / permission nahi mili'); }
+    }
+    if (!recStreams.length) {
+      recStatus.textContent = 'Recording shuru nahi ho payi: ' + problems.join(', ') + '.';
+      return;
+    }
+    try {
+      recCtx = new AudioContext();
+      const dest = recCtx.createMediaStreamDestination();
+      recStreams.forEach((s) => recCtx.createMediaStreamSource(s).connect(dest));
+      recChunks = [];
+      recMR = new MediaRecorder(dest.stream);
+      recMR.ondataavailable = (e) => { if (e.data.size) recChunks.push(e.data); };
+      recMR.onstop = () => {
+        lastRecBlob = new Blob(recChunks, { type: recMR.mimeType || 'audio/webm' });
+        recPreview.src = URL.createObjectURL(lastRecBlob);
+        recPreview.style.display = 'block';
+        saveRecBtn.style.display = 'inline-block';
+        recStreams.forEach((s) => s.getTracks().forEach((t) => t.stop()));
+        recStreams = [];
+        if (recCtx) { recCtx.close(); recCtx = null; }
+        clearInterval(recTimer);
+        recBtn.classList.remove('on');
+        recBtn.textContent = 'REC';
+        recStatus.textContent = 'Recording ho gayi (' + recTime.textContent + '). Neeche play karke sun lo, phir Save kar do.';
+      };
+      recMR.start();
+      recStartAt = Date.now();
+      recTime.textContent = '00:00';
+      recTimer = setInterval(() => { recTime.textContent = fmtTime(Date.now() - recStartAt); }, 500);
+      recBtn.classList.add('on');
+      recBtn.textContent = 'STOP';
+      recPreview.style.display = 'none';
+      saveRecBtn.style.display = 'none';
+      recStatus.textContent = 'Recording chal rahi hai...' + (problems.length ? ' (Note: ' + problems.join(', ') + ' - jo awaz mili wahi record ho rahi hai.)' : '');
+    } catch (e) {
+      recStatus.textContent = 'Recording shuru nahi ho payi. Dobara try karo.';
+      recStreams.forEach((s) => s.getTracks().forEach((t) => t.stop()));
+      recStreams = [];
+    }
+  });
+
+  saveRecBtn.addEventListener('click', async () => {
+    if (!lastRecBlob) return;
+    const buf = await lastRecBlob.arrayBuffer();
+    const name = 'recording-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.webm';
+    const ok = await window.api.saveAudio(buf, name);
+    recStatus.textContent = ok ? 'Recording save ho gayi tumhare PC me.' : 'Save cancel ho gaya ya nahi ho paya.';
+  });
+
+  // ================= v3.2: Provider Tester, Usage UI, Data, Crash Recovery =================
+  function persistExtraSettings() {
+    try { localStorage.setItem('ai_settings', JSON.stringify(settings)); } catch (e) { /* ignore */ }
+    syncAll();
+  }
+  function downloadText(name, text) {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => { try { URL.revokeObjectURL(a.href); } catch (e) { /* ignore */ } }, 4000);
+  }
+  // --- Fallback permission list ---
+  function buildApprovedList() {
+    const box = document.getElementById('approvedList');
+    if (!box) return;
+    box.innerHTML = '';
+    const items = [{ id: 'gemini', name: 'Gemini' }]
+      .concat(Object.keys(PROVIDERS).map((pid) => ({ id: pid, name: PROVIDERS[pid].name })))
+      .concat(customProviders().map((c) => ({ id: 'custom:' + c.name, name: c.name })));
+    items.forEach((it) => {
+      const lab = document.createElement('label');
+      lab.style.display = 'flex'; lab.style.alignItems = 'center'; lab.style.gap = '4px';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.dataset.pid = it.id;
+      cb.checked = !Array.isArray(settings.approved) || settings.approved.indexOf(it.id) >= 0;
+      cb.addEventListener('change', () => {
+        settings.approved = Array.from(box.querySelectorAll('input[type=checkbox]')).filter((x) => x.checked).map((x) => x.dataset.pid);
+        persistExtraSettings();
+      });
+      lab.appendChild(cb);
+      lab.appendChild(document.createTextNode(it.name));
+      box.appendChild(lab);
+    });
+  }
+  // --- Usage UI ---
+  function renderUsage() {
+    const el = document.getElementById('usageSummary');
+    if (!el) return;
+    const u = loadUsage();
+    const today = todayStr(); const month = today.slice(0, 7);
+    const agg = {};
+    for (const k in u) {
+      const parts = k.split('|'); const d = parts[0]; const pid = parts[1];
+      if (!agg[pid]) agg[pid] = { tr: 0, tt: 0, mr: 0, mt: 0 };
+      if (d === today) { agg[pid].tr += u[k].r; agg[pid].tt += u[k].t; }
+      if (d.indexOf(month) === 0) { agg[pid].mr += u[k].r; agg[pid].mt += u[k].t; }
+    }
+    const pids = Object.keys(agg);
+    if (!pids.length) { el.textContent = 'Abhi koi usage record nahi.'; return; }
+    el.innerHTML = pids.map((pid) => '<div>' + escapeHtml(pid) + ' — aaj: <b>' + agg[pid].tr + '</b> requests, ~' + agg[pid].tt + ' tokens (andaz) | is mahine: <b>' + agg[pid].mr + '</b> requests, ~' + agg[pid].mt + ' tokens</div>').join('') +
+      '<div style="opacity:0.7;">Token ginti andaz (characters/4) hai — asal billing provider ke dashboard par dekho. Yahan koi keemat invent nahi ki gayi.</div>';
+  }
+  // --- Provider Tester (compatibility + health) ---
+  let modelHealth = {};
+  try { modelHealth = JSON.parse(localStorage.getItem('model_health_v1') || '{}') || {}; } catch (e) { modelHealth = {}; }
+  function saveModelHealth() { try { localStorage.setItem('model_health_v1', JSON.stringify(modelHealth)); } catch (e) { /* ignore */ } }
+  function firstKeyOf(pid) { return String((providerKeys()[pid] || '')).split(/[\n,]+/).map((s) => s.trim()).filter(Boolean)[0] || ''; }
+  function withTimeout(ms) { const c = new AbortController(); const t = setTimeout(() => { try { c.abort(); } catch (e) { /* ignore */ } }, ms); return { signal: c.signal, done: () => clearTimeout(t) }; }
+  // gpt-oss jaise reasoning models ke liye: reasoning low + zyada token budget, warna chhote test me jawab khaali aata hai
+  function probeBody(model, messages, maxTok, stream) {
+    const b = { model: model, messages: messages, max_tokens: maxTok, stream: !!stream };
+    if (String(model).indexOf('gpt-oss') >= 0) { b.reasoning_effort = 'low'; b.max_tokens = Math.max(maxTok, 300); }
+    return JSON.stringify(b);
+  }
+  async function probeTextOpenAI(base, key, model) {
+    const t0 = Date.now(); const to = withTimeout(20000);
+    try {
+      const res = await apiFetch(base.replace(/\/$/, '') + '/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: probeBody(model, [{ role: 'user', content: 'Reply with exactly: OK' }], 16, false), signal: to.signal });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) return { ok: false, total: Date.now() - t0, err: (data && data.error && data.error.message) || ('HTTP ' + res.status) };
+      const txt = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+      return { ok: !!String(txt).trim(), total: Date.now() - t0, err: String(txt).trim() ? '' : 'Khali jawab aya' };
+    } catch (e) { return { ok: false, total: Date.now() - t0, err: 'Network/timeout' }; } finally { to.done(); }
+  }
+  async function probeStreamOpenAI(base, key, model) {
+    const t0 = Date.now(); const to = withTimeout(20000);
+    try {
+      const res = await apiFetch(base.replace(/\/$/, '') + '/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: probeBody(model, [{ role: 'user', content: 'Reply with exactly: OK' }], 16, true), signal: to.signal });
+      if (!res.ok || !res.body) return { ok: false, err: 'HTTP ' + res.status };
+      const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
+      while (Date.now() - t0 < 20000) {
+        const r = await reader.read();
+        if (r.done) break;
+        buf += dec.decode(r.value, { stream: true });
+        if (buf.indexOf('data:') >= 0 && buf.length > 12) { try { reader.cancel(); } catch (e) { /* ignore */ } return { ok: true, ttft: Date.now() - t0 }; }
+      }
+      return { ok: false, err: 'Stream se data nahi aya' };
+    } catch (e) { return { ok: false, err: 'Stream fail' }; } finally { to.done(); }
+  }
+  async function probeJsonOpenAI(base, key, model) {
+    const t0 = Date.now(); const to = withTimeout(20000);
+    try {
+      const res = await apiFetch(base.replace(/\/$/, '') + '/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: probeBody(model, [{ role: 'user', content: 'Reply ONLY with this exact JSON and nothing else: {\"ok\":true}' }], 32, false), signal: to.signal });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) return { ok: false, err: 'HTTP ' + res.status };
+      const txt = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+      return { ok: /\{\s*"ok"\s*:\s*true\s*\}/.test(String(txt)), err: 'JSON format nahi aya' };
+    } catch (e) { return { ok: false, err: 'Network/timeout' }; } finally { to.done(); }
+  }
+  async function probeVisionOpenAI(base, key, model) {
+    const t0 = Date.now(); const to = withTimeout(25000);
+    try {
+      const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+      const res = await apiFetch(base.replace(/\/$/, '') + '/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key }, body: probeBody(model, [{ role: 'user', content: [{ type: 'text', text: 'What color is this image? One word.' }, { type: 'image_url', image_url: { url: png } }] }], 16, false), signal: to.signal });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) return { ok: false, err: (data && data.error && data.error.message) || ('HTTP ' + res.status) };
+      const txt = (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+      return { ok: !!String(txt).trim(), err: 'Khali jawab aya' };
+    } catch (e) { return { ok: false, err: 'Network/timeout' }; } finally { to.done(); }
+  }
+  async function probeTextGemini(key, model) {
+    const t0 = Date.now(); const to = withTimeout(20000);
+    try {
+      const res = await apiFetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify({ contents: [{ parts: [{ text: 'Reply with exactly: OK' }] }], generationConfig: { maxOutputTokens: 16 } }), signal: to.signal });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) return { ok: false, total: Date.now() - t0, err: (data && data.error && data.error.message) || ('HTTP ' + res.status) };
+      const parts = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+      const txt = parts ? parts.map((p) => p.text || '').join('') : '';
+      return { ok: !!txt.trim(), total: Date.now() - t0, err: txt.trim() ? '' : 'Khali jawab aya' };
+    } catch (e) { return { ok: false, total: Date.now() - t0, err: 'Network/timeout' }; } finally { to.done(); }
+  }
+  async function probeStreamGemini(key, model) {
+    const t0 = Date.now(); const to = withTimeout(20000);
+    try {
+      const res = await apiFetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':streamGenerateContent?alt=sse', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify({ contents: [{ parts: [{ text: 'Reply with exactly: OK' }] }], generationConfig: { maxOutputTokens: 16 } }), signal: to.signal });
+      if (!res.ok || !res.body) return { ok: false, err: 'HTTP ' + res.status };
+      const reader = res.body.getReader(); const dec = new TextDecoder(); let buf = '';
+      while (Date.now() - t0 < 20000) {
+        const r = await reader.read();
+        if (r.done) break;
+        buf += dec.decode(r.value, { stream: true });
+        if (buf.indexOf('data:') >= 0 && buf.length > 12) { try { reader.cancel(); } catch (e) { /* ignore */ } return { ok: true, ttft: Date.now() - t0 }; }
+      }
+      return { ok: false, err: 'Stream se data nahi aya' };
+    } catch (e) { return { ok: false, err: 'Stream fail' }; } finally { to.done(); }
+  }
+  async function probeJsonGemini(key, model) {
+    const t0 = Date.now(); const to = withTimeout(20000);
+    try {
+      const res = await apiFetch('https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent', { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key }, body: JSON.stringify({ contents: [{ parts: [{ text: 'Reply ONLY with this exact JSON and nothing else: {"ok":true}' }] }], generationConfig: { maxOutputTokens: 32 } }), signal: to.signal });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) return { ok: false, err: 'HTTP ' + res.status };
+      const parts = data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts;
+      const txt = parts ? parts.map((p) => p.text || '').join('') : '';
+      return { ok: /\{\s*"ok"\s*:\s*true\s*\}/.test(txt), err: 'JSON format nahi aya' };
+    } catch (e) { return { ok: false, err: 'Network/timeout' }; } finally { to.done(); }
+  }
+  async function testProvider(pid) {
+    const lines = [];
+    if (pid === 'gemini') {
+      const key = keyCache.gemini;
+      if (!key) { lines.push('✗ Gemini — key nahi hai'); return lines; }
+      const res = { ts: Date.now(), models: {}, stream: null, json: null, vision: 'na' };
+      for (const model of GEMINI_MODELS.slice(0, 2)) {
+        const t = await probeTextGemini(key, model);
+        res.models[model] = t;
+        lines.push((t.ok ? '✓' : '✗') + ' Gemini — ' + model + ': text ' + (t.ok ? 'OK (' + t.total + 'ms)' : 'FAIL — ' + t.err));
+      }
+      const s = await probeStreamGemini(key, GEMINI_MODELS[1] || GEMINI_MODELS[0]);
+      res.stream = s.ok;
+      lines.push((s.ok ? '✓' : '✗') + ' Gemini — streaming ' + (s.ok ? 'OK (pehla token ' + s.ttft + 'ms)' : 'FAIL — ' + s.err));
+      const jt = await probeJsonGemini(key, GEMINI_MODELS[1] || GEMINI_MODELS[0]);
+      res.json = jt.ok;
+      lines.push((jt.ok ? '✓' : '✗') + ' Gemini — JSON jawab ' + (jt.ok ? 'OK' : 'FAIL — ' + jt.err));
+      modelHealth['gemini'] = res; saveModelHealth();
+      return lines;
+    }
+    let base = null, key = '', models = [], visionModels = [], label = pid;
+    const P = PROVIDERS[pid];
+    if (P) { base = P.base; key = firstKeyOf(pid); models = [P.fast, P.mid, P.smart]; label = P.name; visionModels = P.vision; }
+    else if (pid.indexOf('custom:') === 0) {
+      const c = customProviders().find((x) => 'custom:' + x.name === pid);
+      if (c) { base = c.base; key = c.key; models = [c.model]; label = c.name; visionModels = c.vision ? [c.model] : []; }
+    }
+    if (!key || !base) { lines.push('✗ ' + label + ' — key nahi hai'); return lines; }
+    const res = { ts: Date.now(), models: {}, stream: null, json: null, vision: 'na' };
+    for (let i = 0; i < models.length; i++) {
+      const model = models[i];
+      const t = await probeTextOpenAI(base, key, model);
+      res.models[model] = t;
+      lines.push((t.ok ? '✓' : '✗') + ' ' + label + ' — ' + model + ': text ' + (t.ok ? 'OK (' + t.total + 'ms)' : 'FAIL — ' + t.err));
+      if (i === 0) {
+        const s = await probeStreamOpenAI(base, key, model);
+        res.stream = s.ok;
+        lines.push((s.ok ? '✓' : '✗') + ' ' + label + ' — streaming ' + (s.ok ? 'OK (pehla token ' + s.ttft + 'ms)' : 'FAIL — ' + s.err));
+        const j = await probeJsonOpenAI(base, key, model);
+        res.json = j.ok;
+        lines.push((j.ok ? '✓' : '✗') + ' ' + label + ' — JSON jawab ' + (j.ok ? 'OK' : 'FAIL — ' + j.err));
+      }
+    }
+    if (visionModels.length) {
+      const v = await probeVisionOpenAI(base, key, visionModels[0]);
+      res.vision = v.ok ? 'ok' : 'fail';
+      lines.push((v.ok ? '✓' : '✗') + ' ' + label + ' — photo (vision) ' + (v.ok ? 'OK' : 'FAIL — ' + v.err));
+    }
+    modelHealth[pid] = res; saveModelHealth();
+    return lines;
+  }
+  function renderTestLines(lines) {
+    const el = document.getElementById('testResults');
+    if (el) el.innerHTML = lines.map((l) => '<div>' + escapeHtml(l) + '</div>').join('');
+  }
+  function buildTestModelOptions() {
+    const sel = document.getElementById('testModelSel');
+    if (!sel) return;
+    sel.innerHTML = '';
+    const add = (pid, label, model) => { const o = document.createElement('option'); o.value = pid + '|' + model; o.textContent = label + ' — ' + model; sel.appendChild(o); };
+    GEMINI_MODELS.forEach((m) => add('gemini', 'Gemini', m));
+    Object.keys(PROVIDERS).forEach((pid) => { const P = PROVIDERS[pid]; [P.fast, P.mid, P.smart].concat(P.vision).forEach((m) => add(pid, P.name, m)); });
+    customProviders().forEach((c) => add('custom:' + c.name, c.name, c.model));
+  }
+  const testAllBtn = document.getElementById('testAllBtn');
+  if (testAllBtn) testAllBtn.addEventListener('click', async () => {
+    testAllBtn.disabled = true;
+    renderTestLines(['Test chal raha hai... (har provider ko asal call karke check ho raha hai)']);
+    const pids = [];
+    if (keyCache.gemini) pids.push('gemini');
+    Object.keys(PROVIDERS).forEach((pid) => { if (firstKeyOf(pid)) pids.push(pid); });
+    customProviders().forEach((c) => pids.push('custom:' + c.name));
+    const all = [];
+    for (const pid of pids) { const ls = await testProvider(pid); all.push.apply(all, ls); renderTestLines(all.slice()); }
+    if (!pids.length) renderTestLines(['Koi provider key hi nahi hai — pehle upar key daalo.']);
+    testAllBtn.disabled = false;
+  });
+  const testModelBtn = document.getElementById('testModelBtn');
+  if (testModelBtn) testModelBtn.addEventListener('click', async () => {
+    const sel = document.getElementById('testModelSel');
+    if (!sel || !sel.value) return;
+    const parts = sel.value.split('|'); const pid = parts[0]; const model = parts.slice(1).join('|');
+    testModelBtn.disabled = true;
+    renderTestLines(['Test chal raha hai: ' + pid + ' / ' + model]);
+    let t;
+    if (pid === 'gemini') t = await probeTextGemini(keyCache.gemini, model);
+    else {
+      let base = null, key = '';
+      const P = PROVIDERS[pid];
+      if (P) { base = P.base; key = firstKeyOf(pid); }
+      else { const c = customProviders().find((x) => 'custom:' + x.name === pid); if (c) { base = c.base; key = c.key; } }
+      t = (base && key) ? await probeTextOpenAI(base, key, model) : { ok: false, err: 'Key nahi hai' };
+    }
+    if (!modelHealth[pid]) modelHealth[pid] = { ts: Date.now(), models: {}, stream: null, json: null, vision: 'na' };
+    modelHealth[pid].models[model] = t; modelHealth[pid].ts = Date.now(); saveModelHealth();
+    renderTestLines([(t.ok ? '✓' : '✗') + ' ' + pid + ' — ' + model + ': ' + (t.ok ? 'OK (' + t.total + 'ms)' : 'FAIL — ' + t.err)]);
+    testModelBtn.disabled = false;
+  });
+  const exportReportBtn = document.getElementById('exportReportBtn');
+  if (exportReportBtn) exportReportBtn.addEventListener('click', () => {
+    let out = 'Veltrix AI — Provider Diagnostic Report\n' + new Date().toLocaleString() + '\n\n';
+    const pids = Object.keys(modelHealth);
+    if (!pids.length) out += 'Abhi koi test nahi hua.\n';
+    pids.forEach((pid) => {
+      const h = modelHealth[pid];
+      out += '== ' + pid + ' == (last test: ' + new Date(h.ts).toLocaleString() + ')\n';
+      Object.keys(h.models || {}).forEach((m) => { const t = h.models[m]; out += '  ' + m + ': ' + (t.ok ? 'OK ' + t.total + 'ms' : 'FAIL — ' + t.err) + '\n'; });
+      out += '  streaming: ' + h.stream + ' | json: ' + h.json + ' | vision: ' + h.vision + '\n\n';
+    });
+    out += 'Cooldown abhi: ' + JSON.stringify(Object.keys(cooldowns)) + '\n';
+    downloadText('provider-report.txt', out);
+  });
+  // --- Usage / cache / data controls ---
+  const exportUsageBtn = document.getElementById('exportUsageBtn');
+  if (exportUsageBtn) exportUsageBtn.addEventListener('click', () => {
+    const u = loadUsage();
+    let csv = 'date,provider,model,requests,tokens_est\n';
+    Object.keys(u).sort().forEach((k) => { const p = k.split('|'); csv += p[0] + ',' + p[1] + ',' + (p[2] || '-') + ',' + u[k].r + ',' + u[k].t + '\n'; });
+    downloadText('api-usage.csv', csv);
+  });
+  const clearCacheBtn = document.getElementById('clearCacheBtn');
+  if (clearCacheBtn) clearCacheBtn.addEventListener('click', () => {
+    try { localStorage.removeItem('ans_cache_v1'); } catch (e) { /* ignore */ }
+    scheduleShareState();
+    addMsg('sys', 'Cache saaf ho gaya.');
+  });
+  const exportChatBtn = document.getElementById('exportChatBtn');
+  if (exportChatBtn) exportChatBtn.addEventListener('click', () => {
+    downloadText('chat-export.txt', convo.map((t) => (t.who === 'user' ? 'TUM: ' : 'AI: ') + t.text).join('\n\n') || 'Chat khali hai.');
+  });
+  const backupBtn = document.getElementById('backupBtn');
+  if (backupBtn) backupBtn.addEventListener('click', () => {
+    const data = { v: 1, app: 'Secure Course Player', ts: Date.now(), settings: settings, profile: localStorage.getItem('my_profile') || '', customBoxes: localStorage.getItem('my_custom_boxes') || '', savedConvo: localStorage.getItem('saved_convo_v1') || '', usage: localStorage.getItem('usage_v1') || '{}', modelHealth: localStorage.getItem('model_health_v1') || '{}' };
+    downloadText('scp-backup.json', JSON.stringify(data, null, 2));
+    addMsg('sys', 'Backup download ho gaya. Note: isme API keys NAHI hain — keys encrypted store me hi rehti hain.');
+  });
+  const restoreFile = document.getElementById('restoreFile');
+  if (restoreFile) restoreFile.addEventListener('change', () => {
+    const f = restoreFile.files && restoreFile.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const d = JSON.parse(r.result);
+        if (d.settings) { settings = Object.assign(settings, d.settings); try { localStorage.setItem('ai_settings', JSON.stringify(settings)); } catch (e) { /* ignore */ } syncAll(); }
+        if (typeof d.profile === 'string') { try { localStorage.setItem('my_profile', d.profile); } catch (e) { /* ignore */ } syncAll(); }
+        if (typeof d.customBoxes === 'string') { try { localStorage.setItem('my_custom_boxes', d.customBoxes); } catch (e) { /* ignore */ } syncAll(); loadCustomBoxes(); }
+        if (d.savedConvo) { try { localStorage.setItem('saved_convo_v1', d.savedConvo); } catch (e) { /* ignore */ } }
+        if (d.usage) { try { localStorage.setItem('usage_v1', d.usage); } catch (e) { /* ignore */ } }
+        if (d.modelHealth) { try { localStorage.setItem('model_health_v1', d.modelHealth); } catch (e) { /* ignore */ } }
+        convo = [];
+        messagesEl.innerHTML = '';
+        restoreSavedChat();
+        buildApprovedList();
+        buildTestModelOptions();
+        renderUsage();
+        addMsg('sys', 'Backup lag gaya. Kuch settings ke liye app band karke dobara kholna behtar rahega.');
+      } catch (err) { addMsg('sys', 'Backup file samajh nahi ayi — sahi SCP backup JSON chuno.'); }
+    };
+    r.readAsText(f);
+  });
+  const clearSavedBtn = document.getElementById('clearSavedBtn');
+  if (clearSavedBtn) clearSavedBtn.addEventListener('click', () => {
+    try { localStorage.removeItem('saved_convo_v1'); localStorage.removeItem('pending_ask_v1'); } catch (e) { /* ignore */ }
+    clearChat();
+  });
+  function bindNum(id, key, isFloat) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = settings[key] || 0;
+    el.addEventListener('change', () => { settings[key] = Math.max(0, parseInt(el.value || '0', 10) || 0); persistExtraSettings(); });
+  }
+  bindNum('dailyLimitInput', 'dailyLimit');
+  bindNum('warnAtInput', 'warnAt');
+  bindNum('cacheHoursInput', 'cacheHours');
+  const cacheEnabledChk = document.getElementById('cacheEnabledChk');
+  if (cacheEnabledChk) { cacheEnabledChk.checked = !!settings.cacheEnabled; cacheEnabledChk.addEventListener('change', () => { settings.cacheEnabled = cacheEnabledChk.checked; persistExtraSettings(); }); }
+  const retentionSel = document.getElementById('retentionSel');
+  if (retentionSel) { retentionSel.value = String(settings.retentionDays || 30); retentionSel.addEventListener('change', () => { settings.retentionDays = parseInt(retentionSel.value, 10) || 30; persistExtraSettings(); }); }
+  // --- Crash recovery: purani chat wapas + adhoora sawal input me (apne aap dobara NAHI bhejte) ---
+  function restoreSavedChat() {
+    try {
+      currentChatId = localStorage.getItem('scp_current_chat') || null;
+      const raw = localStorage.getItem('saved_convo_v1');
+      if (raw) {
+        const saved = JSON.parse(raw);
+        const ageDays = (Date.now() - (saved.ts || 0)) / 86400000;
+        if (ageDays > (settings.retentionDays || 30)) { localStorage.removeItem('saved_convo_v1'); }
+        else if (saved.items && saved.items.length && !convo.length) {
+          convo = saved.items.slice(-50);
+          convo.forEach((t) => {
+            const d = addMsg(t.who === 'user' ? 'user' : 'ai', '');
+            if (t.who === 'ai') { d._raw = t.text; d._txt.innerHTML = renderMarkdown(t.text); d._txt.classList.add('rendered'); renderMath(d._txt); d.classList.add('done'); }
+            else d._txt.textContent = t.text.length > 220 ? t.text.slice(0, 220) + '...' : t.text;
+          });
+          addMsg('sys', 'Purani chat wapas mil gayi — bina internet ke bhi padh sakte ho.');
+        }
+      }
+      const pend = localStorage.getItem('pending_ask_v1');
+      if (pend) {
+        const p = JSON.parse(pend);
+        localStorage.removeItem('pending_ask_v1');
+        if (p && p.q) {
+          addMsg('sys', '⚠ Pichhla jawab beech me ruk gaya tha (app band ho gaya hoga). Sawal input me wapas rakh diya hai — Bhejo dabakar khud bhejo; apne aap dobara NAHI bheja gaya, taaki duplicate na ho.');
+          chatText.value = p.q;
+          growInput();
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }
+  buildApprovedList();
+  buildTestModelOptions();
+  renderUsage();
+  setTimeout(restoreSavedChat, 600);
+</script>
+
+
+<script>
+/* ===== Design A (UX Redesign) — tabs, cards, limit bar, remembers strip, lang pill ===== */
+function updateLimitBar() {
+  try {
+    const bar = document.getElementById('limitBar'); if (!bar) return;
+    const lim = settings.dailyLimit || 0;
+    if (!lim) { bar.style.display = 'none'; return; }
+    const used = usageTodayCount();
+    const ratio = used / lim;
+    if (ratio < 0.7) { bar.style.display = 'none'; if (chatText.disabled && chatText.dataset.limitlock) { chatText.disabled = false; delete chatText.dataset.limitlock; chatText.placeholder = 'Apna doubt yahan likho...'; } return; }
+    bar.style.display = 'block';
+    const f = document.getElementById('limitFill');
+    f.style.width = Math.min(100, Math.round(ratio * 100)) + '%';
+    f.className = ratio >= 1 ? 'red' : (ratio >= 0.9 ? 'amber' : '');
+    document.getElementById('limitText').textContent = 'Aaj ke sawal: ' + used + ' / ' + lim + ' \u00B7 aadhi raat ko reset hota hai';
+    if (ratio >= 1) { chatText.disabled = true; chatText.dataset.limitlock = '1'; chatText.placeholder = 'Aaj ki limit khatm \u2014 kal phir milegi, ya Settings se limit badha do.'; }
+  } catch (e) { /* ignore */ }
+}
+function updateRememberStrip() {
+  try {
+    const el = document.getElementById('rememberText'); if (!el) return;
+    const n = Math.min(convo.length, 20);
+    const prof = (localStorage.getItem('my_profile') || '').trim();
+    el.textContent = '\u{1F9E0} AI ki yaad: is chat ke pichhle ' + n + ' sandesh' + (convo.length > 20 ? ' + purani baat ka saar' : '') + (prof ? ' + tumhari saved profile' : '') + ' \u2014 tap karke dekho';
+    const det = document.getElementById('rememberDetail');
+    if (det) det.textContent = 'Har naye sawal ke saath ye jata hai: pichhle ' + n + ' sandesh' + (convo.length > 20 ? ', us se purani baat-cheet ka chhota saar (digest)' : '') + (prof ? ', Settings me save ki hui profile/resume' : '') + ' aur tumhari custom details. Iske alawa kuch nahi jata.';
+  } catch (e) { /* ignore */ }
+}
+function buildAdvancedPanel(panel) {
+  panel.innerHTML = '<div class="sectionTitle">\u{1F50E} Request ID Lookup</div><div style="padding:6px 2px; font-size:13px;">Kisi jawab ki Request ID daalo \u2014 kis provider/model ne jawab diya, kitni der lagi, sab dikhega. Debug log Memory &amp; Data tab me hai \u2014 wahan ye niyam saaf likha hai: keys kabhi log nahi hoti.</div>';
+  const row = document.createElement('div'); row.style.cssText = 'display:flex;gap:8px;padding:4px 2px;';
+  const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'req-\u2026'; inp.style.flex = '1';
+  const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'navbtn'; btn.textContent = 'Dhoondo';
+  const out = document.createElement('div'); out.style.cssText = 'font-size:12.5px;padding:4px 2px;white-space:pre-wrap;';
+  btn.addEventListener('click', () => { const v = inp.value.trim(); const log = window.__scpLog || []; const hit = log.find((x) => x.id && v && x.id.indexOf(v) === 0); out.textContent = !v ? 'Pehle ID daalo.' : (hit ? ('Provider: ' + hit.pid + '\nModel: ' + hit.model + '\nPehla shabd: ' + (hit.ttft == null ? '\u2014' : hit.ttft + ' ms') + '\nKul samay: ' + hit.total + ' ms\nNatija: ' + hit.result) : 'Is ID ka koi record nahi mila (sirf pichhle 50 requests rakhe jate hain).'); });
+  row.appendChild(inp); row.appendChild(btn); panel.appendChild(row); panel.appendChild(out);
+}
+function buildProviderCards() {
+  try {
+    const host = document.querySelector('[data-tabpanel="providers"]');
+    if (!host) return;
+    const grid = document.getElementById('pcardGrid');
+    if (!grid || grid.dataset.built) return;
+    grid.dataset.built = '1';
+    const items = [{ id: 'gemini', name: 'Google Gemini', keys: keyCache.gemini ? 1 : 0 }];
+    Object.keys(PROVIDERS).forEach((pid) => items.push({ id: pid, name: PROVIDERS[pid].name, keys: keyCount((keyCache.providers || {})[pid] || '') }));
+    (keyCache.customs || []).forEach((c, i) => items.push({ id: 'custom' + i, name: c.name || ('Custom ' + (i + 1)), keys: 1 }));
+    items.forEach((it) => {
+      const card = document.createElement('div'); card.className = 'pcard';
+      let dot = ''; let meta = it.keys ? it.keys + ' key save hai' : 'koi key nahi hai';
+      try { const hk = Object.keys(modelHealth || {}).filter((k) => k.indexOf(it.id) === 0); if (hk.length) { const oks = hk.filter((k) => modelHealth[k] && (modelHealth[k].ok === true || modelHealth[k].status === 'ok')); dot = oks.length === hk.length ? 'green' : (oks.length ? 'amber' : 'red'); meta += ' \u00B7 health: ' + (dot === 'green' ? 'sab theek' : dot === 'amber' ? 'kuch fail' : 'fail'); } } catch (e) { /* ignore */ }
+      card.innerHTML = '<div><span class="pdot ' + dot + '"></span><b></b></div><div class="pmeta"></div>';
+      card.querySelector('b').textContent = it.name;
+      card.querySelector('.pmeta').textContent = meta;
+      const tb = document.createElement('button'); tb.type = 'button'; tb.className = 'navbtn'; tb.textContent = '\u{1FA7A} Test';
+      tb.addEventListener('click', () => { const b = Array.from(document.querySelectorAll('#settingsView button')).find((x) => /Test All/i.test(x.textContent)); if (b) { showSetTab('memory'); b.scrollIntoView({ block: 'center' }); b.click(); } });
+      card.appendChild(tb);
+      grid.appendChild(card);
+    });
+
+  } catch (e) { /* ignore */ }
+}
+function organizeSettingsTabs() {
+  const view = document.getElementById('settingsView');
+  if (!view || view.dataset.tabbed) return;
+  view.dataset.tabbed = '1';
+  const tabs = [['profile', '\u{1F9D1} Profile & Context'], ['providers', '\u{1F50C} Providers & Keys'], ['behavior', '\u{1F39B} Behavior'], ['memory', '\u{1F5C4} Memory & Data'], ['advanced', '\u{1F52C} Advanced']];
+  const panels = {}; const bar = document.createElement('div'); bar.className = 'setTabBar';
+  tabs.forEach(([id, label]) => { const p = document.createElement('div'); p.className = 'setPanel'; p.dataset.tabpanel = id; p.style.display = 'none'; panels[id] = p; const b = document.createElement('button'); b.type = 'button'; b.textContent = label; b.dataset.tabbtn = id; b.addEventListener('click', () => showSetTab(id)); bar.appendChild(b); });
+  const dest = (title) => { if (/API Keys/.test(title)) return 'providers'; if (/AI Settings|Floating Window|Ghost Typing/.test(title)) return 'behavior'; if (/Profile|Saved Jawab/.test(title)) return 'profile'; return 'memory'; };
+  const host = (view.querySelector('.sectionTitle') || {}).parentElement || view;
+  let cur = null;
+  Array.from(host.childNodes).forEach((node) => { if (node.nodeType === 1 && node.classList && node.classList.contains('sectionTitle')) cur = panels[dest(node.textContent)]; if (cur) cur.appendChild(node); });
+  host.appendChild(bar);
+  tabs.forEach(([id]) => host.appendChild(panels[id]));
+  buildAdvancedPanel(panels['advanced']);
+  window.showSetTab = function (id) { tabs.forEach(([t]) => { panels[t].style.display = t === id ? 'block' : 'none'; const b = bar.querySelector('[data-tabbtn="' + t + '"]'); if (b) b.classList.toggle('active', t === id); }); if (id === 'providers') buildProviderCards(); };
+  showSetTab('providers');
+}
+try {
+  organizeSettingsTabs();
+  updateLimitBar(); updateRememberStrip();
+  const strip = document.getElementById('rememberStrip');
+  if (strip) strip.addEventListener('click', () => { strip.classList.toggle('open'); updateRememberStrip(); });
+  const pill = document.getElementById('langPill');
+  if (pill) { const sync = () => { pill.textContent = settings.lang === 'hinglish' ? 'Hinglish' : 'EN'; }; sync(); pill.addEventListener('click', () => { settings.lang = settings.lang === 'hinglish' ? 'en' : 'hinglish'; const ls = document.getElementById('langSel'); if (ls) ls.value = settings.lang; try { saveFmtSettings(); } catch (e) { /* ignore */ } sync(); }); }
+} catch (e) { /* ignore */ }
+</script>
+<script>
+/* ===== Perfect Mix 4.1.0 (Design B ke best features) ===== */
+let codeOverlayEl = null;
+function showCodeOverlay(code) {
+  if (!codeOverlayEl) {
+    codeOverlayEl = document.createElement('div'); codeOverlayEl.id = 'codeOverlay';
+    codeOverlayEl.innerHTML = '<div class="box"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><b>Code \u2014 bada view</b><button class="navbtn" type="button">\u2715 Band karo</button></div><pre></pre></div>';
+    codeOverlayEl.querySelector('button').addEventListener('click', () => { codeOverlayEl.style.display = 'none'; });
+    codeOverlayEl.addEventListener('click', (e) => { if (e.target === codeOverlayEl) codeOverlayEl.style.display = 'none'; });
+    document.body.appendChild(codeOverlayEl);
+  }
+  codeOverlayEl.querySelector('pre').textContent = code;
+  codeOverlayEl.style.display = 'flex';
+}
+function applyFontSizeB() { try { document.body.classList.remove('fs-s', 'fs-l'); if (settings.fontSize === 's') document.body.classList.add('fs-s'); if (settings.fontSize === 'l') document.body.classList.add('fs-l'); const fs = document.getElementById('fontSizeSel'); if (fs) fs.value = settings.fontSize || 'm'; } catch (e) { /* ignore */ } }
+function updateHealthDot() {
+  try {
+    const dot = document.getElementById('healthDot'); if (!dot) return;
+    const pid = settings.provider;
+    const hh = (typeof modelHealth !== 'undefined' && modelHealth) ? modelHealth[pid] : null;
+    if (!hh || !hh.models || !Object.keys(hh.models).length) { dot.className = ''; dot.title = 'Provider health: Not tested \u2014 Settings me Test All chalao'; return; }
+    const vals = Object.values(hh.models);
+    const oks = vals.filter((t) => t && t.ok === true);
+    const lat = oks.length && (oks[0].ms || oks[0].ttft) ? ' \u00B7 pehla jawab ~' + Math.round(oks[0].ms || oks[0].ttft) + ' ms' : '';
+    if (oks.length === vals.length) { dot.className = 'green'; dot.title = 'Healthy' + lat; }
+    else if (oks.length) { dot.className = 'amber'; dot.title = 'Degraded \u2014 kuch models fail' + lat; }
+    else { dot.className = 'red'; dot.title = 'Unavailable \u2014 saare models fail (last test ke hisaab se)'; }
+  } catch (e) { /* ignore */ }
+}
+function tierOf() { return settings.turbo ? 'fast' : (settings.fast ? 'fast' : 'mid'); }
+function buildModelQuick() {
+  try {
+    const quick = document.getElementById('providerQuick'); if (!quick) return;
+    const cur = settings.provider + ':' + tierOf();
+    quick.innerHTML = '';
+    const addO = (parent, v, t) => { const o = document.createElement('option'); o.value = v; o.textContent = t; parent.appendChild(o); };
+    addO(quick, 'race:mid', '\u26A1 Race \u2014 do provider ek saath, jo pehle aye');
+    const grp = (pid, name, P) => { const g = document.createElement('optgroup'); g.label = name; addO(g, pid + ':fast', '\u26A1 Fast \u00B7 ' + P.fast); addO(g, pid + ':mid', '\u2696 Balanced \u00B7 ' + P.mid); addO(g, pid + ':smart', '\u{1F9E0} Advanced \u00B7 ' + P.smart); if (P.vision && P.vision.length) addO(g, pid + ':vision', '\u{1F441} Vision \u00B7 ' + P.vision[0]); quick.appendChild(g); };
+    grp('gemini', 'Google Gemini', { fast: GEMINI_MODELS[0], mid: GEMINI_MODELS[1], smart: GEMINI_MODELS[2], vision: GEMINI_MODELS });
+    Object.keys(PROVIDERS).forEach((pid) => grp(pid, PROVIDERS[pid].name, PROVIDERS[pid]));
+    customProviders().forEach((c) => { const g = document.createElement('optgroup'); g.label = '\u2795 ' + c.name; addO(g, 'custom:' + c.name + ':mid', c.model || 'custom model'); quick.appendChild(g); });
+    quick.value = cur;
+    if (quick.value !== cur) quick.value = 'groq:mid';
+  } catch (e) { /* ignore */ }
+}
+function updateChatTitle() { try { const lbl = document.getElementById('chatTitleLbl'); if (!lbl) return; const c = loadChats().find((x) => x.id === currentChatId); lbl.textContent = c ? c.title : ''; lbl.title = c ? c.title : ''; } catch (e) { /* ignore */ } }
+function restoreDraft() { try { const d = localStorage.getItem('scp_draft_' + (currentChatId || 'main')); if (d && !chatText.value) { chatText.value = d; growInput(); } } catch (e) { /* ignore */ } }
+try {
+  if (typeof refreshProviderOptions === 'function') { const _rpoB = refreshProviderOptions; refreshProviderOptions = function () { _rpoB(); buildModelQuick(); updateHealthDot(); }; }
+  if (typeof openChat === 'function') { const _ocB = openChat; openChat = function (id) { const r = _ocB(id); updateChatTitle(); restoreDraft(); return r; }; }
+  if (typeof newChat === 'function') { const _ncB = newChat; newChat = function () { const r = _ncB(); updateChatTitle(); restoreDraft(); return r; }; }
+  const quick = document.getElementById('providerQuick');
+  if (quick) quick.addEventListener('change', () => { const v = quick.value; let pid, tier; if (v.indexOf('custom:') === 0) { const j = v.lastIndexOf(':'); pid = v.slice(0, j); tier = v.slice(j + 1); } else { const i = v.indexOf(':'); pid = v.slice(0, i); tier = v.slice(i + 1); } settings.provider = pid; settings.fast = tier === 'fast'; settings.turbo = false; const ps = document.getElementById('providerSel'); if (ps) ps.value = pid; try { updateBadge(); } catch (e) { /* ignore */ } try { saveFmtSettings(); } catch (e) { /* ignore */ } updateHealthDot(); });
+  const fss = document.getElementById('fontSizeSel');
+  if (fss) fss.addEventListener('change', () => { settings.fontSize = fss.value; try { saveFmtSettings(); } catch (e) { /* ignore */ } applyFontSizeB(); });
+  const cs = document.getElementById('chatSearch');
+  if (cs) cs.addEventListener('input', () => renderChatList());
+  const glb = document.getElementById('ghostLastBtn');
+  if (glb) glb.addEventListener('click', () => { const ais = document.querySelectorAll('.msg.ai'); const last = ais[ais.length - 1]; const txt = last && last._txt ? last._txt.textContent : ''; if (txt) startGhostType(txt); else addMsg('sys', 'Pehle koi jawab aane do, phir Type chalega.'); });
+  chatText.addEventListener('input', () => { try { localStorage.setItem('scp_draft_' + (currentChatId || 'main'), chatText.value); } catch (e) { /* ignore */ } });
+  buildModelQuick(); updateHealthDot(); applyFontSizeB(); updateChatTitle(); restoreDraft();
+} catch (e) { /* ignore */ }
+
+</script>
+
+<script>
+/* ===== Perfect Mix 4.1.0 — activity line + draft clear ===== */
+let actBusy = false;
+function actShow() { try { const al = document.getElementById('activityLine'); if (al) { al.style.display = 'block'; al.textContent = '\u{1F50C} Step 1: Provider se jud rahe hain\u2026 (Step 2: pehle shabd ka intezaar)'; } actBusy = true; } catch (e) { /* ignore */ } }
+function actDone(ok) { try { const al = document.getElementById('activityLine'); if (!al || !actBusy) return; actBusy = false; if (ok) { al.textContent = '\u2713 Jawab mil gaya'; setTimeout(() => { al.style.display = 'none'; }, 3000); } else { al.textContent = '\u2716 Jawab nahi aaya \u2014 upar wale card me wajah aur Retry hai.'; } } catch (e) { /* ignore */ } }
+function actSend() { actShow(); setTimeout(() => { try { localStorage.removeItem('scp_draft_' + (currentChatId || 'main')); } catch (e) { /* ignore */ } }, 60); }
+try {
+  const sendB = document.getElementById('sendBtn'); if (sendB) sendB.addEventListener('click', actSend);
+  const ct = document.getElementById('chatText'); if (ct) ct.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) actSend(); });
+  const mo = new MutationObserver((muts) => { if (!actBusy) return; muts.forEach((mu) => { mu.addedNodes.forEach((n) => { if (n.nodeType === 1 && n.classList) { if (n.classList.contains('error')) actDone(false); else if (n.classList.contains('ai') && n.classList.contains('done')) actDone(true); } }); }); });
+  mo.observe(document.getElementById('messages'), { childList: true });
+} catch (e) { /* ignore */ }
+</script>
+
+<script>
+/* ===== Veltrix 5.0: Class Mode + Board View + Chips + Ghost slider ===== */
+try {
+  document.querySelectorAll('#chipsRow .chip').forEach((ch) => ch.addEventListener('click', () => {
+    const ais = document.querySelectorAll('.msg.ai');
+    if (!ais.length) { addMsg('sys', 'Pehle ek sawal puchho, phir ye chips usi jawab par kaam karengi.'); return; }
+    askAI(ch.dataset.q);
+  }));
+  const gs = document.getElementById('ghostSlider');
+  const gv = document.getElementById('ghostSliderVal');
+  if (gs) { const saved = Number(localStorage.getItem('ghost_custom_delay') || 34); gs.value = saved; if (gv) gv.textContent = saved + 'ms'; gs.addEventListener('input', () => { localStorage.setItem('ghost_custom_delay', gs.value); if (gv) gv.textContent = gs.value + 'ms'; }); }
+} catch (e) { /* ignore */ }
+</script>
+
+
+<script>
+/* ===== v5.1 Interview Screen ===== */
+try {
+  const panel = document.getElementById('ivPanel');
+  const jd = document.getElementById('jdText');
+  let prevProviderIv = null;
+  const paintResume = () => { const el = document.getElementById('ivResumeState'); if (el) { const has = !!((localStorage.getItem('my_profile') || '').trim()); el.textContent = has ? 'Resume: save hai, jawab usi hisaab se' : 'Resume: abhi save nahi - Settings ke Profile me ek baar paste karo'; } };
+  const ivOn = () => {
+    if (!settings.interviewMode) { prevProviderIv = settings.provider; settings.interviewMode = true; settings.provider = 'race'; settings.muted = true; const mm = document.getElementById('muteMode'); if (mm) mm.checked = true; try { saveFmtSettings(); } catch (e) { /* ignore */ } }
+    if (panel) panel.style.display = 'flex';
+    if (jd && settings.interviewJd && !jd.value) jd.value = settings.interviewJd;
+    paintResume();
+  };
+  const ivOff = () => { settings.interviewMode = false; if (prevProviderIv) settings.provider = prevProviderIv; try { saveFmtSettings(); } catch (e) { /* ignore */ } if (panel) panel.style.display = 'none'; const op2 = document.getElementById('optPanel'); if (op2) { op2.classList.remove('open'); try { localStorage.setItem('iv_opt_open', '0'); } catch (e) { /* ignore */ } } };
+  const nav = document.getElementById('navInterview');
+  if (nav) nav.addEventListener('click', () => { show('chat'); ivOn(); const op = document.getElementById('optPanel'); if (op) { op.classList.add('open'); try { localStorage.setItem('iv_opt_open', '1'); } catch (e) { /* ignore */ } } addMsg('sys', 'Interview Mode ON: sab kuch isi ek screen par hai - JD, Live Suno, Screenshot aur jawab.'); });
+  const lv = document.getElementById('ivLiveBtn'); if (lv) lv.addEventListener('click', () => { const b = document.getElementById('listenBtn'); if (b) b.click(); });
+  const sh = document.getElementById('ivShotBtn'); if (sh) sh.addEventListener('click', () => { const b = document.getElementById('shotBtn'); if (b) b.click(); });
+  if (jd) jd.addEventListener('input', () => { settings.interviewJd = jd.value.slice(0, 4000); try { saveFmtSettings(); } catch (e) { /* ignore */ } });
+  document.querySelectorAll('#ivPanel .chip').forEach((ch) => ch.addEventListener('click', () => { const ais = document.querySelectorAll('.msg.ai'); if (!ais.length) { addMsg('sys', 'Pehle ek sawal ka jawab aane do.'); return; } askAI(ch.dataset.q); }));
+  if (settings.interviewMode) ivOn();
+} catch (e) { /* ignore */ }
+</script>
+
+<script>
+/* ===== Intervue AI: shuruaat hi interview screen se ===== */
+try { settings.lang = 'en'; try { saveFmtSettings(); } catch (e) { /* ignore */ } show('chat'); const p = document.getElementById('ivPanel'); if (p) p.style.display = 'flex'; const jd = document.getElementById('jdText'); if (jd && settings.interviewJd && !jd.value) jd.value = settings.interviewJd; } catch (e) { /* ignore */ }
+</script>
+
+<script>
+/* ===== Intervue 1.1: practice chips + JD slots + notes ===== */
+try {
+  document.querySelectorAll('#prepRow .pchip').forEach((ch) => ch.addEventListener('click', () => { askAI(ch.dataset.q); }));
+  const jdEl = document.getElementById('jdText');
+  let curSlot = localStorage.getItem('iv_jd_cur') || '1';
+  const loadSlot = (n) => { curSlot = String(n); localStorage.setItem('iv_jd_cur', curSlot); const v = localStorage.getItem('iv_jd_' + curSlot) || ''; if (jdEl) jdEl.value = v; settings.interviewJd = v; try { saveFmtSettings(); } catch (e) { /* ignore */ } };
+  document.querySelectorAll('[data-jdslot]').forEach((b) => b.addEventListener('click', () => loadSlot(b.dataset.jdslot)));
+  if (jdEl) { jdEl.addEventListener('input', () => { localStorage.setItem('iv_jd_' + curSlot, jdEl.value); }); if (!jdEl.value && localStorage.getItem('iv_jd_' + curSlot)) loadSlot(curSlot); }
+  const nt = document.getElementById('ivNotes');
+  if (nt) { nt.value = localStorage.getItem('iv_notes') || ''; nt.addEventListener('input', () => localStorage.setItem('iv_notes', nt.value)); }
+} catch (e) { /* ignore */ }
+</script>
+
+<script>
+/* ===== Intervue 1.3: side options panel (resize + hide) + prep row scroll ===== */
+try {
+  const op = document.getElementById('optPanel');
+  const applyOpt = () => { if (!op) return; let open = '0'; let w = ''; try { open = localStorage.getItem('iv_opt_open') || '0'; w = localStorage.getItem('iv_opt_w') || ''; } catch (e) { /* ignore */ } op.classList.toggle('open', open === '1'); if (w) op.style.width = w + 'px'; };
+  applyOpt();
+  const hb = document.getElementById('optHideBtn');
+  if (hb) hb.addEventListener('click', () => { if (op) op.classList.remove('open'); try { localStorage.setItem('iv_opt_open', '0'); } catch (e) { /* ignore */ } });
+  const tb = document.getElementById('optToggleBtn');
+  if (tb) tb.addEventListener('click', () => { if (!op) return; const now = !op.classList.contains('open'); op.classList.toggle('open', now); try { localStorage.setItem('iv_opt_open', now ? '1' : '0'); } catch (e) { /* ignore */ } });
+  const drag = document.getElementById('optDrag');
+  if (drag && op) drag.addEventListener('mousedown', (ev) => { ev.preventDefault(); const startX = ev.clientX; const startW = op.getBoundingClientRect().width; const move = (e2) => { const w = Math.min(520, Math.max(240, startW + (startX - e2.clientX))); op.style.width = w + 'px'; }; const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); try { localStorage.setItem('iv_opt_w', String(parseInt(op.style.width, 10) || 320)); } catch (e) { /* ignore */ } }; document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); });
+  const pr = document.getElementById('prepRow');
+  if (pr) pr.addEventListener('wheel', (e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { pr.scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+} catch (e) { /* ignore */ }
+</script>
+</body>
+</html>
